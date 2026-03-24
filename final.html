@@ -1,0 +1,725 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>EXAM REGISTRATION - SRMVEC</title>
+    <style>
+        :root {
+            --primary: #2563eb;
+            --primary-dark: #1e40af;
+            --secondary: #10b981;
+            --bg-color: #f3f4f6;
+            --white: #ffffff;
+            --text-color: #1f2937;
+            --error: #ef4444;
+            --warning: #f59e0b;
+            --purple: #8b5cf6;
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Segoe UI', sans-serif; }
+        body { background-color: var(--bg-color); color: var(--text-color); display: flex; flex-direction: column; min-height: 100vh; }
+
+        /* Header */
+        header {
+            background: var(--white);
+            padding: 1rem 2rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+        }
+        .logo { font-size: 1.5rem; font-weight: bold; color: var(--primary); cursor: pointer; }
+        .user-info { display: flex; align-items: center; gap: 1rem; }
+        .btn-logout {
+            background: var(--error); color: white; border: none; padding: 0.5rem 1rem;
+            border-radius: 4px; cursor: pointer; font-weight: bold;
+        }
+
+        /* Main Layout */
+        .container { max-width: 1000px; margin: 2rem auto; padding: 0 1rem; width: 100%; }
+        
+        /* Auth Forms */
+        .auth-container {
+            max-width: 400px; margin: 3rem auto; background: var(--white);
+            padding: 2rem; border-radius: 8px; box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        }
+        .auth-container h2 { margin-bottom: 1.5rem; text-align: center; color: var(--primary-dark); }
+        .auth-link { text-align: center; margin-top: 1rem; font-size: 0.9rem; }
+        .auth-link a { color: var(--primary); cursor: pointer; text-decoration: underline; }
+
+        /* Forms */
+        .form-group { margin-bottom: 1rem; }
+        label { display: block; margin-bottom: 0.5rem; font-weight: 500; }
+        input, select {
+            width: 100%; padding: 0.75rem; border: 1px solid #d1d5db; border-radius: 4px;
+            font-size: 1rem;
+        }
+        input:focus, select:focus { outline: none; border-color: var(--primary); }
+        
+        /* Buttons */
+        .btn {
+            padding: 0.75rem 1.5rem; border: none; border-radius: 4px;
+            font-size: 1rem; font-weight: bold; cursor: pointer; transition: 0.3s; width: 100%;
+        }
+        .btn-primary { background: var(--primary); color: white; }
+        .btn-primary:hover { background: var(--primary-dark); }
+        .btn-secondary { background: var(--secondary); color: white; width: auto; }
+        .btn-warning { background: var(--warning); color: white; width: auto; }
+        .btn-purple { background: var(--purple); color: white; width: auto; }
+        
+        .btn-small { padding: 0.4rem 0.8rem; font-size: 0.8rem; background: var(--primary); color: white; border: none; border-radius: 3px; cursor: pointer; margin-right: 5px; }
+        .btn-delete { background: var(--error); }
+
+        /* Cards & Tables */
+        .card { background: var(--white); padding: 1.5rem; border-radius: 8px; margin-bottom: 1.5rem; box-shadow: 0 2px 4px rgba(0,0,0,0.05); }
+        .card h3 { margin-bottom: 1rem; color: var(--primary-dark); border-bottom: 1px solid #eee; padding-bottom: 0.5rem; }
+        table { width: 100%; border-collapse: collapse; margin-top: 1rem; }
+        th, td { padding: 0.75rem; text-align: left; border-bottom: 1px solid #e5e7eb; font-size: 0.9rem; }
+        th { background-color: #f9fafb; }
+        
+        .hidden { display: none; }
+        .msg { padding: 0.8rem; margin-bottom: 1rem; border-radius: 4px; text-align: center; }
+        .error { background: #fee2e2; color: #991b1b; }
+        .success { background: #d1fae5; color: #065f46; }
+
+        /* Status Badges */
+        .status-pending { color: #d97706; font-weight: bold; }
+        .status-confirmed { color: #059669; font-weight: bold; }
+        .status-paid { color: #059669; font-weight: bold; }
+        .status-unpaid { color: #dc2626; font-weight: bold; }
+
+        /* Tabs */
+        .tabs { display: flex; gap: 1rem; border-bottom: 2px solid var(--bg-color); margin-bottom: 1rem; }
+        .tab-btn { background: none; border: none; padding: 0.5rem 1rem; cursor: pointer; font-weight: bold; color: #6b7280; }
+        .tab-btn.active { color: var(--primary); border-bottom: 3px solid var(--primary); }
+
+        /* MODALS (Hall Ticket & Payment) */
+        .modal-container {
+            display: none; 
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.5);
+            z-index: 1000;
+            justify-content: center;
+            align-items: center;
+        }
+        
+        /* Hall Ticket Styles */
+        .hall-ticket {
+            background: white;
+            width: 800px;
+            padding: 40px;
+            border: 2px solid #000;
+            position: relative;
+            box-shadow: 0 0 20px rgba(0,0,0,0.2);
+            max-height: 90vh;
+            overflow-y: auto;
+        }
+        .ht-header {
+            text-align: center;
+            border-bottom: 2px solid #000;
+            padding-bottom: 20px;
+            margin-bottom: 20px;
+        }
+        .ht-college-name { font-size: 24px; font-weight: bold; text-transform: uppercase; margin-bottom: 5px; }
+        .ht-dept { font-size: 18px; font-weight: 600; color: #444; margin-bottom: 10px; }
+        .ht-title { font-size: 22px; font-weight: bold; background: #eee; display: inline-block; padding: 5px 20px; border: 1px solid #000; }
+        
+        .ht-body { display: flex; gap: 30px; }
+        .ht-details { flex: 2; }
+        .ht-photo-box { flex: 1; border: 1px solid #000; height: 150px; display: flex; justify-content: center; align-items: center; color: #777; font-size: 12px; text-align: center; }
+        
+        .ht-row { display: flex; margin-bottom: 8px; font-size: 16px; }
+        .ht-label { width: 150px; font-weight: 600; }
+        .ht-value { flex: 1; border-bottom: 1px dotted #ccc; }
+
+        .ht-instructions { margin-top: 30px; border-top: 1px solid #eee; padding-top: 15px; }
+        .ht-instructions h4 { margin-bottom: 10px; text-decoration: underline; }
+        .ht-instructions ul { padding-left: 20px; font-size: 14px; color: #555; }
+        .ht-instructions li { margin-bottom: 5px; }
+
+        .ht-footer { margin-top: 40px; display: flex; justify-content: space-between; }
+        .ht-signature { text-align: center; width: 200px; }
+        .ht-signature-line { border-top: 1px solid #000; margin-top: 40px; font-weight: bold; font-size: 14px;}
+
+        .close-btn { position: absolute; top: 10px; right: 15px; font-size: 24px; cursor: pointer; color: #999; }
+        .print-btn { margin-top: 20px; text-align: center; }
+
+        /* Payment Modal Specific */
+        .payment-modal {
+            background: white;
+            padding: 2rem;
+            border-radius: 8px;
+            width: 400px;
+            text-align: center;
+        }
+        .payment-modal h3 { margin-bottom: 1rem; color: var(--primary-dark); }
+        .price-tag { font-size: 2rem; font-weight: bold; color: var(--secondary); margin: 1rem 0; }
+
+        @media print {
+            body * { visibility: hidden; }
+            .modal-container, .modal-container * { visibility: visible; }
+            .hall-ticket { position: absolute; left: 0; top: 0; width: 100%; border: none; box-shadow: none; }
+            .close-btn, .print-btn { display: none; }
+        }
+    </style>
+</head>
+<body>
+
+    <!-- HEADER -->
+    <header>
+        <div class="logo" onclick="app.logout()">ExamPortal</div>
+        <div class="user-info">
+            <span id="headerUsername"></span>
+            <button class="btn-logout hidden" id="logoutBtn" onclick="app.logout()">Logout</button>
+        </div>
+    </header>
+
+    <!-- LOGIN VIEW -->
+    <div id="view-login" class="auth-container">
+        <h2>Login</h2>
+        <div id="login-msg" class="msg hidden"></div>
+        <form onsubmit="app.login(event)">
+            <div class="form-group">
+                <label>Username</label>
+                <input type="text" id="login-user" required>
+            </div>
+            <div class="form-group">
+                <label>Password</label>
+                <input type="password" id="login-pass" required>
+            </div>
+            <button type="submit" class="btn btn-primary">Login</button>
+        </form>
+        <div class="auth-link">
+            Don't have an account? <a onclick="app.showView('signup')">Sign Up</a>
+        </div>
+    </div>
+
+    <!-- SIGNUP VIEW -->
+    <div id="view-signup" class="auth-container hidden">
+        <h2>Student Sign Up</h2>
+        <div id="signup-msg" class="msg hidden"></div>
+        <form onsubmit="app.signup(event)">
+            <div class="form-group">
+                <label>Full Name</label>
+                <input type="text" id="su-name" required>
+            </div>
+            <div class="form-group">
+                <label>Username (Email)</label>
+                <input type="text" id="su-user" required>
+            </div>
+            <div class="form-group">
+                <label>Password</label>
+                <input type="password" id="su-pass" required>
+            </div>
+            <button type="submit" class="btn btn-primary">Create Account</button>
+        </form>
+        <div class="auth-link">
+            Already have an account? <a onclick="app.showView('login')">Login</a>
+        </div>
+    </div>
+
+    <!-- STUDENT DASHBOARD -->
+    <div id="view-student" class="container hidden">
+        <div class="card">
+            <h3>Register for an Exam</h3>
+            <div id="reg-msg" class="msg hidden"></div>
+            <form onsubmit="app.registerExam(event)">
+                <div style="display: flex; gap: 1rem;">
+                    <div class="form-group" style="flex:1">
+                        <label>Roll Number</label>
+                        <input type="text" id="exam-roll" placeholder="e.g., 2024-101" required>
+                    </div>
+                    <div class="form-group" style="flex:2">
+                        <label>Select Exam (Fee shown in bracket)</label>
+                        <select id="exam-select" required>
+                            <option value="" disabled selected>-- Select Exam --</option>
+                        </select>
+                    </div>
+                </div>
+                <button type="submit" class="btn btn-primary" style="width: auto; margin-top: 0.5rem;">Submit Registration</button>
+            </form>
+        </div>
+
+        <div class="card">
+            <h3>My Registrations</h3>
+            <table>
+                <thead><tr><th>Roll No</th><th>Exam</th><th>Timings</th><th>Payment</th><th>Status</th><th>Action</th></tr></thead>
+                <tbody id="student-reg-list"></tbody>
+            </table>
+        </div>
+    </div>
+
+    <!-- ADMIN DASHBOARD -->
+    <div id="view-admin" class="container hidden">
+        <div class="tabs">
+            <button class="tab-btn active" onclick="app.openAdminTab('exams')">Manage Exams</button>
+            <button class="tab-btn" onclick="app.openAdminTab('registrations')">Confirm Registrations</button>
+        </div>
+
+        <!-- Admin: Manage Exams -->
+        <div id="admin-tab-exams" class="card">
+            <h3>Add New Exam</h3>
+            <form onsubmit="app.addExam(event)" style="display: flex; gap: 1rem; flex-wrap: wrap;">
+                <input type="text" id="add-exam-name" placeholder="Exam Name" required style="flex:2">
+                <input type="date" id="add-exam-date" required style="flex:1">
+                <input type="time" id="add-exam-time" required style="flex:1">
+                <input type="text" id="add-exam-center" placeholder="Center" required style="flex:1">
+                <!-- Fee Input -->
+                <input type="number" id="add-exam-fee" placeholder="Fee (₹)" required style="flex:1">
+                <button type="submit" class="btn btn-secondary">Add</button>
+            </form>
+            
+            <h3 style="margin-top: 2rem;">Exam List</h3>
+            <table>
+                <thead><tr><th>Name</th><th>Date</th><th>Time</th><th>Center</th><th>Fee</th><th>Action</th></tr></thead>
+                <tbody id="admin-exam-list"></tbody>
+            </table>
+        </div>
+
+        <!-- Admin: Confirm Registrations -->
+        <div id="admin-tab-registrations" class="card hidden">
+            <h3>Student Registrations</h3>
+            <table>
+                <thead><tr><th>Roll No</th><th>Student</th><th>Exam</th><th>Payment Status</th><th>Approval</th><th>Action</th></tr></thead>
+                <tbody id="admin-reg-list"></tbody>
+            </table>
+        </div>
+    </div>
+
+    <!-- PAYMENT MODAL -->
+    <div id="payment-modal" class="modal-container">
+        <div class="payment-modal">
+            <h3>Secure Payment</h3>
+            <p>Processing payment for:</p>
+            <h4 id="pay-exam-name" style="color:var(--primary)"></h4>
+            <div class="price-tag">₹ <span id="pay-amount">0</span></div>
+            <div class="form-group">
+                <label>Card Number (Demo)</label>
+                <input type="text" placeholder="4242 4242 4242 4242" value="4242 4242 4242 4242" readonly>
+            </div>
+            <div style="display:flex; gap:10px">
+                <button class="btn btn-secondary" style="flex:1" onclick="app.closePayment()">Cancel</button>
+                <button class="btn btn-primary" style="flex:1" onclick="app.processPayment()">Pay Now</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- HALL TICKET MODAL -->
+    <div id="hall-ticket-modal" class="modal-container">
+        <div class="hall-ticket">
+            <span class="close-btn" onclick="app.closeHallTicket()">&times;</span>
+            
+            <div class="ht-header">
+                <div class="ht-college-name">SRM Valliammai Engineering College</div>
+                <div class="ht-dept">Department of Cyber Security</div>
+                <div class="ht-title">HALL TICKET</div>
+            </div>
+
+            <div class="ht-body">
+                <div class="ht-details">
+                    <div class="ht-row">
+                        <div class="ht-label">Student Name:</div>
+                        <div class="ht-value" id="ht-name"></div>
+                    </div>
+                    <div class="ht-row">
+                        <div class="ht-label">Register No:</div>
+                        <div class="ht-value" id="ht-roll"></div>
+                    </div>
+                    <div class="ht-row">
+                        <div class="ht-label">Exam Name:</div>
+                        <div class="ht-value" id="ht-exam"></div>
+                    </div>
+                    <div class="ht-row">
+                        <div class="ht-label">Date:</div>
+                        <div class="ht-value" id="ht-date"></div>
+                    </div>
+                    <div class="ht-row">
+                        <div class="ht-label">Time:</div>
+                        <div class="ht-value" id="ht-time"></div>
+                    </div>
+                    <div class="ht-row">
+                        <div class="ht-label">Venue:</div>
+                        <div class="ht-value" id="ht-center"></div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="ht-instructions">
+                <h4>Important Instructions:</h4>
+                <ul>
+                    <li>Bring this hall ticket to the examination hall.</li>
+                    <li>No electronic devices (mobile phones, smart watches) are allowed.</li>
+                    <li>Carry a valid ID proof (College ID) along with this ticket.</li>
+                    <li>Enter the hall 30 minutes before the commencement of the exam.</li>
+                </ul>
+            </div>
+
+            <div class="ht-footer">
+                <div class="ht-signature">
+                    <div class="ht-signature-line">Student Signature</div>
+                </div>
+                <div class="ht-signature">
+                    <div class="ht-signature-line">Controller of Examinations</div>
+                </div>
+            </div>
+
+            <div class="print-btn">
+                <button class="btn btn-primary" onclick="window.print()">Print Hall Ticket</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const app = {
+            currentPaymentId: null, // Store ID currently being paid for
+
+            // --- 1. INITIALIZATION & DATA ---
+            init: function() {
+                let users = this.get('users');
+                if (!users) users = [];
+                
+                const adminExists = users.some(u => u.username === 'admin');
+                if (!adminExists) {
+                    users.push({ id: 1, username: 'admin', password: 'admin123', role: 'admin', name: 'Administrator' });
+                    this.save('users', users);
+                }
+
+                const session = this.get('session');
+                if (session) {
+                    this.updateUI(session);
+                } else {
+                    this.showView('login');
+                }
+            },
+
+            get: (key) => JSON.parse(localStorage.getItem(key)),
+            save: (key, data) => localStorage.setItem(key, JSON.stringify(data)),
+
+            // --- 2. AUTHENTICATION ---
+            login: function(e) {
+                e.preventDefault();
+                const username = document.getElementById('login-user').value;
+                const password = document.getElementById('login-pass').value;
+                const users = this.get('users') || [];
+                
+                const user = users.find(u => u.username === username && u.password === password);
+                const msgDiv = document.getElementById('login-msg');
+
+                if (user) {
+                    this.save('session', user);
+                    this.updateUI(user);
+                } else {
+                    msgDiv.textContent = "Invalid username or password.";
+                    msgDiv.className = "msg error";
+                }
+            },
+
+            signup: function(e) {
+                e.preventDefault();
+                const name = document.getElementById('su-name').value;
+                const username = document.getElementById('su-user').value;
+                const password = document.getElementById('su-pass').value;
+                const msgDiv = document.getElementById('signup-msg');
+                let users = this.get('users') || [];
+
+                if (users.some(u => u.username === username)) {
+                    msgDiv.textContent = "Username already exists!";
+                    msgDiv.className = "msg error";
+                    return;
+                }
+
+                const newUser = { id: Date.now(), username, password, name, role: 'student' };
+                users.push(newUser);
+                this.save('users', users);
+                
+                msgDiv.textContent = "Account created! Please login.";
+                msgDiv.className = "msg success";
+                setTimeout(() => this.showView('login'), 1500);
+            },
+
+            logout: function() {
+                localStorage.removeItem('session');
+                location.reload();
+            },
+
+            // --- 3. VIEW MANAGEMENT ---
+            showView: function(viewName) {
+                document.querySelectorAll('.auth-container, .container').forEach(el => el.classList.add('hidden'));
+                document.getElementById(`view-${viewName}`).classList.remove('hidden');
+            },
+
+            updateUI: function(user) {
+                document.getElementById('logoutBtn').classList.remove('hidden');
+                document.getElementById('headerUsername').textContent = `Welcome, ${user.name}`;
+                
+                if (user.role === 'admin') {
+                    this.showView('admin');
+                    this.loadAdminData();
+                } else {
+                    this.showView('student');
+                    this.loadStudentData();
+                }
+            },
+
+            // --- 4. STUDENT LOGIC ---
+            loadStudentData: function() {
+                const exams = this.get('exams') || [];
+                const select = document.getElementById('exam-select');
+                select.innerHTML = '<option value="" disabled selected>-- Select Exam --</option>';
+                
+                exams.forEach(ex => {
+                    select.innerHTML += `<option value="${ex.id}">${ex.name} - ${ex.date} (Fee: ₹${ex.fee})</option>`;
+                });
+
+                const session = this.get('session');
+                const regs = (this.get('registrations') || []).filter(r => r.studentId === session.id);
+                const tbody = document.getElementById('student-reg-list');
+                tbody.innerHTML = '';
+                
+                regs.forEach(r => {
+                    // Payment Status Logic
+                    let payStatusHtml = `<span class="status-unpaid">Unpaid</span>`;
+                    let payActionHtml = `<button class="btn-small btn-purple" onclick="app.initPayment(${r.id})">Pay ₹${r.fee}</button>`;
+
+                    if (r.paymentStatus === 'paid') {
+                        payStatusHtml = `<span class="status-paid">Paid</span>`;
+                        payActionHtml = `<span style="color:#10b981; font-size:12px">Payment Done</span>`;
+                    }
+
+                    // Approval Status Logic
+                    let approvalHtml = `<span class="status-pending">Pending</span>`;
+                    let downloadHtml = '-';
+
+                    // Only allow download if Paid AND Confirmed
+                    if (r.status === 'confirmed' && r.paymentStatus === 'paid') {
+                        approvalHtml = `<span class="status-confirmed">Confirmed</span>`;
+                        downloadHtml = `<button class="btn-small" onclick="app.showHallTicket(${r.id})">Download Hall Ticket</button>`;
+                    } else if (r.status === 'confirmed') {
+                        approvalHtml = `<span class="status-confirmed">Confirmed</span>`;
+                        downloadHtml = `<span style="font-size:10px; color:#777">Payment Required</span>`;
+                    }
+
+                    tbody.innerHTML += `<tr>
+                        <td>${r.rollNo}</td>
+                        <td>${r.examName}</td>
+                        <td>${r.examDate} (${r.examTime || 'TBD'})</td>
+                        <td>${payStatusHtml}</td>
+                        <td>${approvalHtml}</td>
+                        <td>
+                            ${payActionHtml}<br><br>
+                            ${downloadHtml}
+                        </td>
+                    </tr>`;
+                });
+            },
+
+            registerExam: function(e) {
+                e.preventDefault();
+                const session = this.get('session');
+                const rollNo = document.getElementById('exam-roll').value;
+                const examId = document.getElementById('exam-select').value;
+                const exams = this.get('exams') || [];
+                const selectedExam = exams.find(e => e.id == examId);
+                
+                if(!selectedExam) return alert("Please select an exam.");
+
+                let regs = this.get('registrations') || [];
+                if(regs.some(r => r.studentId === session.id && r.examId === examId)) {
+                    alert("You already registered for this exam.");
+                    return;
+                }
+
+                const newReg = {
+                    id: Date.now(),
+                    studentId: session.id,
+                    studentName: session.name,
+                    studentEmail: session.username,
+                    examId: examId,
+                    examName: selectedExam.name,
+                    examDate: selectedExam.date,
+                    examTime: selectedExam.time,
+                    examCenter: selectedExam.center,
+                    fee: selectedExam.fee,
+                    rollNo: rollNo,
+                    status: 'pending', // Admin Approval
+                    paymentStatus: 'unpaid' // Payment Status
+                };
+
+                regs.push(newReg);
+                this.save('registrations', regs);
+                
+                const msgDiv = document.getElementById('reg-msg');
+                msgDiv.textContent = "Successfully registered! Please proceed to payment.";
+                msgDiv.className = "msg success";
+                document.getElementById('exam-roll').value = '';
+                this.loadStudentData();
+            },
+
+            // --- PAYMENT LOGIC ---
+            initPayment: function(regId) {
+                const regs = this.get('registrations') || [];
+                const reg = regs.find(r => r.id === regId);
+                if(!reg) return;
+
+                this.currentPaymentId = regId;
+                document.getElementById('pay-exam-name').innerText = reg.examName;
+                document.getElementById('pay-amount').innerText = reg.fee;
+                document.getElementById('payment-modal').style.display = 'flex';
+            },
+
+            closePayment: function() {
+                document.getElementById('payment-modal').style.display = 'none';
+                this.currentPaymentId = null;
+            },
+
+            processPayment: function() {
+                if(!this.currentPaymentId) return;
+                
+                let regs = this.get('registrations') || [];
+                const index = regs.findIndex(r => r.id === this.currentPaymentId);
+                
+                if(index !== -1) {
+                    regs[index].paymentStatus = 'paid';
+                    this.save('registrations', regs);
+                    this.closePayment();
+                    alert("Payment Successful!");
+                    this.loadStudentData(); // Refresh UI
+                }
+            },
+
+            showHallTicket: function(regId) {
+                const regs = this.get('registrations') || [];
+                const reg = regs.find(r => r.id === regId);
+                
+                if(!reg) return;
+
+                document.getElementById('ht-name').innerText = reg.studentName;
+                document.getElementById('ht-roll').innerText = reg.rollNo;
+                document.getElementById('ht-exam').innerText = reg.examName;
+                document.getElementById('ht-date').innerText = reg.examDate;
+                document.getElementById('ht-time').innerText = reg.examTime || 'Not Specified';
+                document.getElementById('ht-center').innerText = reg.examCenter;
+
+                document.getElementById('hall-ticket-modal').style.display = 'flex';
+            },
+
+            closeHallTicket: function() {
+                document.getElementById('hall-ticket-modal').style.display = 'none';
+            },
+
+            // --- 5. ADMIN LOGIC ---
+            openAdminTab: function(tab) {
+                document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+                document.querySelectorAll('[id^="admin-tab"]').forEach(t => t.classList.add('hidden'));
+                
+                if(tab === 'exams') {
+                    document.querySelector('.tab-btn:first-child').classList.add('active');
+                    document.getElementById('admin-tab-exams').classList.remove('hidden');
+                    this.loadAdminData();
+                } else {
+                    document.querySelector('.tab-btn:last-child').classList.add('active');
+                    document.getElementById('admin-tab-registrations').classList.remove('hidden');
+                    this.loadAdminRegistrations();
+                }
+            },
+
+            loadAdminData: function() {
+                const exams = this.get('exams') || [];
+                const examBody = document.getElementById('admin-exam-list');
+                examBody.innerHTML = '';
+                exams.forEach(e => {
+                    examBody.innerHTML += `<tr>
+                        <td>${e.name}</td>
+                        <td>${e.date}</td>
+                        <td>${e.time || 'N/A'}</td>
+                        <td>${e.center}</td>
+                        <td>₹${e.fee}</td>
+                        <td><button class="btn-small btn-delete" onclick="app.deleteExam(${e.id})">Delete</button></td>
+                    </tr>`;
+                });
+            },
+
+            loadAdminRegistrations: function() {
+                const regs = this.get('registrations') || [];
+                const regBody = document.getElementById('admin-reg-list');
+                regBody.innerHTML = '';
+                
+                if(regs.length === 0) {
+                    regBody.innerHTML = '<tr><td colspan="6" style="text-align:center">No registrations found</td></tr>';
+                    return;
+                }
+
+                regs.forEach(r => {
+                    // Payment Status Badge
+                    let payStatus = r.paymentStatus === 'paid' 
+                        ? `<span class="status-paid">Paid</span>` 
+                        : `<span class="status-unpaid">Unpaid</span>`;
+
+                    // Approval Status Badge
+                    let appStatus = r.status === 'confirmed' 
+                        ? `<span class="status-confirmed">Confirmed</span>` 
+                        : `<span class="status-pending">Pending</span>`;
+
+                    let actionHtml = r.status === 'confirmed' 
+                        ? `<span style="color:green; font-size:12px">Approved</span>` 
+                        : `<button class="btn-small btn-warning" onclick="app.confirmReg(${r.id})">Confirm</button>`;
+
+                    regBody.innerHTML += `<tr>
+                        <td>${r.rollNo}</td>
+                        <td>${r.studentName}<br><small style="color:#777">${r.studentEmail}</small></td>
+                        <td>${r.examName}<br><small>${r.examDate} (${r.examTime || 'TBD'})</small></td>
+                        <td>${payStatus}</td>
+                        <td>${appStatus}</td>
+                        <td>${actionHtml}</td>
+                    </tr>`;
+                });
+            },
+
+            addExam: function(e) {
+                e.preventDefault();
+                const name = document.getElementById('add-exam-name').value;
+                const date = document.getElementById('add-exam-date').value;
+                const time = document.getElementById('add-exam-time').value;
+                const center = document.getElementById('add-exam-center').value;
+                const fee = document.getElementById('add-exam-fee').value;
+
+                let exams = this.get('exams') || [];
+                exams.push({ id: Date.now(), name, date, time, center, fee });
+                this.save('exams', exams);
+                
+                // Clear inputs
+                document.getElementById('add-exam-name').value = '';
+                document.getElementById('add-exam-time').value = '';
+                document.getElementById('add-exam-center').value = '';
+                document.getElementById('add-exam-fee').value = '';
+                
+                this.loadAdminData();
+            },
+
+            confirmReg: function(id) {
+                let regs = this.get('registrations');
+                const index = regs.findIndex(r => r.id === id);
+                if(index !== -1) {
+                    regs[index].status = 'confirmed';
+                    this.save('registrations', regs);
+                    this.loadAdminRegistrations();
+                }
+            },
+
+            deleteExam: function(id) {
+                if(confirm("Delete this exam?")) {
+                    let exams = this.get('exams');
+                    exams = exams.filter(e => e.id !== id);
+                    this.save('exams', exams);
+                    this.loadAdminData();
+                }
+            }
+        };
+
+        // Start App
+        app.init();
+    </script>
+</body>
+</html>
