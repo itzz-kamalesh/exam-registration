@@ -4,722 +4,1750 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>EXAM REGISTRATION - SRMVEC</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
     <style>
         :root {
             --primary: #2563eb;
-            --primary-dark: #1e40af;
-            --secondary: #10b981;
-            --bg-color: #f3f4f6;
-            --white: #ffffff;
-            --text-color: #1f2937;
+            --bg-color: #0f172a;
+            --bg-card: rgba(30, 41, 59, 0.7);
+            --text-color: #e2e8f0;
+            --text-muted: #94a3b8;
             --error: #ef4444;
             --warning: #f59e0b;
             --purple: #8b5cf6;
+            --glass: rgba(255, 255, 255, 0.05);
+            --glass-border: rgba(255, 255, 255, 0.1);
+            --cyan: #00f0ff;
+            --magenta: #ff00ff;
+            --neon-green: #00ff88;
         }
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: 'Inter', sans-serif;
+            background: var(--bg-color);
+            color: var(--text-color);
+            min-height: 100vh;
+            overflow-x: hidden;
+        }
+        #bg-canvas { position: fixed; top: 0; left: 0; width: 100%; height: 100%; z-index: 0; pointer-events: none; }
+        .scan-lines { position: fixed; top: 0; left: 0; width: 100%; height: 100%; z-index: 0; pointer-events: none; background: repeating-linear-gradient(0deg, transparent, transparent 2px, rgba(0,0,0,0.04) 2px, rgba(0,0,0,0.04) 4px); }
+        .vignette { position: fixed; top: 0; left: 0; width: 100%; height: 100%; z-index: 0; pointer-events: none; background: radial-gradient(ellipse at center, transparent 50%, rgba(0,0,0,0.5) 100%); }
 
-        * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Segoe UI', sans-serif; }
-        body { background-color: var(--bg-color); color: var(--text-color); display: flex; flex-direction: column; min-height: 100vh; }
+        @keyframes fadeInUp { from { opacity: 0; transform: translateY(40px); } to { opacity: 1; transform: translateY(0); } }
+        @keyframes fadeInDown { from { opacity: 0; transform: translateY(-30px); } to { opacity: 1; transform: translateY(0); } }
+        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+        @keyframes scaleIn { from { opacity: 0; transform: scale(0.8); } to { opacity: 1; transform: scale(1); } }
+        @keyframes pulse { 0%, 100% { transform: scale(1); } 50% { transform: scale(1.05); } }
+        @keyframes borderGlow { 0%, 100% { border-color: rgba(0,240,255,0.2); box-shadow: 0 0 15px rgba(0,240,255,0.05); } 50% { border-color: rgba(0,240,255,0.5); box-shadow: 0 0 30px rgba(0,240,255,0.15); } }
+        @keyframes checkmark { 0% { stroke-dashoffset: 50; } 100% { stroke-dashoffset: 0; } }
+        @keyframes spin { to { transform: rotate(360deg); } }
+        @keyframes toastIn { from { transform: translateX(120%); opacity: 0; } to { transform: translateX(0); opacity: 1; } }
+        @keyframes toastOut { from { transform: translateX(0); opacity: 1; } to { transform: translateX(120%); opacity: 0; } }
+        @keyframes floatBadge { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-3px); } }
+        @keyframes ripple { to { transform: scale(4); opacity: 0; } }
+        @keyframes rowSlideIn { from { opacity: 0; transform: translateX(-20px); } to { opacity: 1; transform: translateX(0); } }
+        @keyframes gradientShift { 0% { background-position: 0% 50%; } 50% { background-position: 100% 50%; } 100% { background-position: 0% 50%; } }
+        @keyframes slideSection { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
+        @keyframes photoGlow { 0%,100%{box-shadow:0 0 10px rgba(0,240,255,0.2);}50%{box-shadow:0 0 25px rgba(0,240,255,0.4);} }
 
-        /* Header */
         header {
-            background: var(--white);
+            position: sticky; top: 0; z-index: 100;
+            background: rgba(15, 23, 42, 0.85);
+            backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px);
             padding: 1rem 2rem;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+            display: flex; justify-content: space-between; align-items: center;
+            border-bottom: 1px solid var(--glass-border);
+            animation: fadeInDown 0.5s ease-out;
         }
-        .logo { font-size: 1.5rem; font-weight: bold; color: var(--primary); cursor: pointer; }
+        .logo {
+            font-size: 1.5rem; font-weight: 900; cursor: pointer;
+            background: linear-gradient(135deg, var(--cyan), var(--magenta), var(--neon-green));
+            background-size: 200% 200%;
+            -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+            background-clip: text;
+            animation: gradientShift 4s ease infinite;
+        }
         .user-info { display: flex; align-items: center; gap: 1rem; }
-        .btn-logout {
-            background: var(--error); color: white; border: none; padding: 0.5rem 1rem;
-            border-radius: 4px; cursor: pointer; font-weight: bold;
-        }
+        .user-badge { display: flex; align-items: center; gap: 0.5rem; background: var(--glass); border: 1px solid var(--glass-border); padding: 0.5rem 1rem; border-radius: 50px; }
+        .user-avatar { width: 32px; height: 32px; border-radius: 50%; background: linear-gradient(135deg, var(--cyan), var(--magenta)); display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 14px; color: white; overflow: hidden; }
+        .user-avatar img { width: 100%; height: 100%; object-fit: cover; }
+        .btn-logout { background: transparent; color: var(--error); border: 1px solid var(--error); padding: 0.5rem 1.2rem; border-radius: 50px; cursor: pointer; font-weight: 600; font-size: 0.85rem; transition: all 0.3s; position: relative; overflow: hidden; }
+        .btn-logout:hover { background: var(--error); color: white; box-shadow: 0 0 20px rgba(239,68,68,0.4); transform: translateY(-2px); }
 
-        /* Main Layout */
-        .container { max-width: 1000px; margin: 2rem auto; padding: 0 1rem; width: 100%; }
-        
-        /* Auth Forms */
+        .container { max-width: 1100px; margin: 2rem auto; padding: 0 1.5rem; width: 100%; position: relative; z-index: 1; }
+
         .auth-container {
-            max-width: 400px; margin: 3rem auto; background: var(--white);
-            padding: 2rem; border-radius: 8px; box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+            max-width: 440px; margin: 4rem auto; position: relative; z-index: 1;
+            background: var(--bg-card); backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px);
+            padding: 2.5rem; border-radius: 20px; border: 1px solid var(--glass-border);
+            animation: scaleIn 0.6s ease-out; box-shadow: 0 25px 60px rgba(0,0,0,0.3);
         }
-        .auth-container h2 { margin-bottom: 1.5rem; text-align: center; color: var(--primary-dark); }
-        .auth-link { text-align: center; margin-top: 1rem; font-size: 0.9rem; }
-        .auth-link a { color: var(--primary); cursor: pointer; text-decoration: underline; }
+        .auth-container::before {
+            content: ''; position: absolute; top: -1px; left: -1px; right: -1px; bottom: -1px;
+            border-radius: 20px; padding: 1px; z-index: -1;
+            background: linear-gradient(135deg, var(--cyan), transparent, var(--magenta));
+            -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+            -webkit-mask-composite: xor; mask-composite: exclude;
+            animation: borderGlow 3s ease-in-out infinite;
+        }
+        .auth-icon { width: 70px; height: 70px; border-radius: 20px; background: linear-gradient(135deg, var(--cyan), var(--magenta)); display: flex; align-items: center; justify-content: center; margin: 0 auto 1.5rem; font-size: 30px; box-shadow: 0 10px 30px rgba(0,240,255,0.3); animation: pulse 3s ease-in-out infinite; }
+        .auth-container h2 { margin-bottom: 0.5rem; text-align: center; font-size: 1.8rem; font-weight: 800; }
+        .auth-subtitle { text-align: center; color: var(--text-muted); margin-bottom: 2rem; font-size: 0.9rem; }
+        .auth-link { text-align: center; margin-top: 1.5rem; font-size: 0.9rem; color: var(--text-muted); }
+        .auth-link a { color: var(--cyan); cursor: pointer; font-weight: 600; transition: all 0.3s; }
+        .auth-link a:hover { text-shadow: 0 0 10px rgba(0,240,255,0.5); }
 
-        /* Forms */
-        .form-group { margin-bottom: 1rem; }
-        label { display: block; margin-bottom: 0.5rem; font-weight: 500; }
-        input, select {
-            width: 100%; padding: 0.75rem; border: 1px solid #d1d5db; border-radius: 4px;
-            font-size: 1rem;
+        .data-entry-container {
+            max-width: 780px; margin: 2rem auto; position: relative; z-index: 1;
+            background: var(--bg-card); backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px);
+            padding: 2.5rem; border-radius: 20px; border: 1px solid var(--glass-border);
+            box-shadow: 0 25px 60px rgba(0,0,0,0.3);
+            opacity: 0; animation: fadeInUp 0.7s ease-out forwards;
         }
-        input:focus, select:focus { outline: none; border-color: var(--primary); }
-        
-        /* Buttons */
+        .data-entry-container::before {
+            content: ''; position: absolute; top: -1px; left: -1px; right: -1px; bottom: -1px;
+            border-radius: 20px; padding: 1px; z-index: -1;
+            background: linear-gradient(135deg, var(--cyan), transparent, var(--neon-green), transparent, var(--magenta));
+            -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+            -webkit-mask-composite: xor; mask-composite: exclude;
+            animation: borderGlow 3s ease-in-out infinite;
+        }
+        .de-header { text-align: center; margin-bottom: 2rem; }
+        .de-header-icon { width: 80px; height: 80px; border-radius: 24px; background: linear-gradient(135deg, var(--cyan), var(--neon-green)); display: flex; align-items: center; justify-content: center; margin: 0 auto 1rem; font-size: 36px; box-shadow: 0 10px 30px rgba(0,240,255,0.25); }
+        .de-header h2 { font-size: 1.6rem; font-weight: 900; }
+        .de-header p { color: var(--text-muted); font-size: 0.88rem; margin-top: 0.4rem; }
+        .de-section {
+            background: rgba(255,255,255,0.02); border: 1px solid var(--glass-border);
+            border-radius: 16px; padding: 1.5rem; margin-bottom: 1.5rem;
+            opacity: 0; animation: slideSection 0.5s ease-out forwards;
+        }
+        .de-section:nth-child(2) { animation-delay: 0.1s; }
+        .de-section:nth-child(3) { animation-delay: 0.15s; }
+        .de-section:nth-child(4) { animation-delay: 0.2s; }
+        .de-section:nth-child(5) { animation-delay: 0.25s; }
+        .de-section:nth-child(6) { animation-delay: 0.3s; }
+        .de-section:nth-child(7) { animation-delay: 0.35s; }
+        .de-section-title {
+            display: flex; align-items: center; gap: 0.6rem;
+            font-size: 0.95rem; font-weight: 800; text-transform: uppercase;
+            letter-spacing: 1px; margin-bottom: 1.2rem;
+            padding-bottom: 0.8rem; border-bottom: 1px solid var(--glass-border);
+        }
+        .de-section-icon { width: 32px; height: 32px; border-radius: 8px; display: flex; align-items: center; justify-content: center; font-size: 16px; flex-shrink: 0; }
+        .de-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 0 1.2rem; }
+        .de-grid .full { grid-column: 1 / -1; }
+        @media (max-width: 600px) { .de-grid { grid-template-columns: 1fr; } .de-grid .full { grid-column: auto; } }
+
+        .form-group { margin-bottom: 1rem; position: relative; }
+        label { display: block; margin-bottom: 0.4rem; font-weight: 600; font-size: 0.78rem; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.5px; transition: color 0.3s; }
+        .form-group:focus-within label { color: var(--cyan); }
+        input, select, textarea {
+            width: 100%; padding: 0.75rem 0.9rem;
+            background: rgba(255,255,255,0.05);
+            border: 1px solid var(--glass-border);
+            border-radius: 10px; font-size: 0.9rem; color: var(--text-color);
+            font-family: 'Inter', sans-serif;
+            transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+        input::placeholder { color: rgba(148, 163, 184, 0.5); }
+        input:focus, select:focus, textarea:focus {
+            outline: none; border-color: var(--cyan);
+            background: rgba(0, 240, 255, 0.04);
+            box-shadow: 0 0 0 4px rgba(0, 240, 255, 0.08), 0 0 20px rgba(0, 240, 255, 0.08);
+            transform: translateY(-1px);
+        }
+        select option { background: #1e293b; color: white; }
+        textarea { resize: vertical; min-height: 70px; }
+        .name-formatting-hint { font-size: 0.68rem; color: var(--text-muted); margin-top: 0.25rem; opacity: 0.7; }
+        .field-error { border-color: var(--error) !important; box-shadow: 0 0 0 4px rgba(239,68,68,0.1) !important; }
+        .field-error-msg { color: var(--error); font-size: 0.72rem; margin-top: 0.3rem; font-weight: 600; display: none; }
+        .field-error-msg.show { display: block; }
+
+        /* ===== PHOTO UPLOAD - SIMPLIFIED ===== */
+        .photo-upload-area { display: flex; flex-direction: column; align-items: center; gap: 1rem; }
+        .photo-drop-zone {
+            width: 180px; height: 220px; border: 2px dashed var(--glass-border);
+            border-radius: 16px; display: flex; flex-direction: column; align-items: center;
+            justify-content: center; cursor: pointer; transition: all 0.4s;
+            position: relative; overflow: hidden; background: rgba(255,255,255,0.02);
+        }
+        .photo-drop-zone:hover, .photo-drop-zone.dragover {
+            border-color: var(--cyan); background: rgba(0,240,255,0.05);
+            box-shadow: 0 0 30px rgba(0,240,255,0.1);
+        }
+        .photo-drop-zone.has-image { border-style: solid; border-color: var(--neon-green); animation: photoGlow 3s ease-in-out infinite; }
+        .photo-drop-zone img { width: 100%; height: 100%; object-fit: cover; border-radius: 14px; }
+        .photo-placeholder { text-align: center; color: var(--text-muted); padding: 1rem; }
+        .photo-placeholder .photo-icon { font-size: 2.5rem; display: block; margin-bottom: 0.5rem; }
+        .photo-placeholder .photo-main { font-size: 0.82rem; font-weight: 600; display: block; }
+        .photo-placeholder .photo-hint { font-size: 0.68rem; opacity: 0.6; display: block; margin-top: 0.3rem; }
+        .photo-actions { display: flex; gap: 0.5rem; flex-wrap: wrap; justify-content: center; }
+        .photo-remove-btn { background: transparent; border: 1px solid var(--error); color: var(--error); padding: 0.35rem 0.8rem; border-radius: 8px; cursor: pointer; font-size: 0.72rem; font-weight: 700; transition: all 0.3s; font-family: 'Inter', sans-serif; }
+        .photo-remove-btn:hover { background: var(--error); color: white; }
+
+        /* ===== BUTTONS ===== */
         .btn {
-            padding: 0.75rem 1.5rem; border: none; border-radius: 4px;
-            font-size: 1rem; font-weight: bold; cursor: pointer; transition: 0.3s; width: 100%;
+            padding: 0.85rem 1.5rem; border: none; border-radius: 12px;
+            font-size: 1rem; font-weight: 700; cursor: pointer;
+            transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+            width: 100%; position: relative; overflow: hidden;
+            font-family: 'Inter', sans-serif; letter-spacing: 0.3px;
         }
-        .btn-primary { background: var(--primary); color: white; }
-        .btn-primary:hover { background: var(--primary-dark); }
-        .btn-secondary { background: var(--secondary); color: white; width: auto; }
-        .btn-warning { background: var(--warning); color: white; width: auto; }
-        .btn-purple { background: var(--purple); color: white; width: auto; }
+        .btn-primary { background: linear-gradient(135deg, var(--cyan), #0099cc); color: #0f172a; box-shadow: 0 4px 15px rgba(0,240,255,0.3); }
+        .btn-primary:hover { transform: translateY(-3px); box-shadow: 0 8px 30px rgba(0,240,255,0.4); }
+        .btn-secondary { background: linear-gradient(135deg, var(--neon-green), #00cc66); color: #0f172a; width: auto; box-shadow: 0 4px 15px rgba(0,255,136,0.3); }
+        .btn-secondary:hover { transform: translateY(-3px); box-shadow: 0 8px 30px rgba(0,255,136,0.4); }
+        .btn-warning { background: linear-gradient(135deg, var(--warning), #d97706); color: white; width: auto; box-shadow: 0 4px 15px rgba(245,158,11,0.3); }
+        .btn-warning:hover { transform: translateY(-3px); }
+        .btn-purple { background: linear-gradient(135deg, var(--purple), #7c3aed); color: white; width: auto; box-shadow: 0 4px 15px rgba(139,92,246,0.3); }
+        .btn-purple:hover { transform: translateY(-3px); }
+        .ripple { position: absolute; border-radius: 50%; background: rgba(255,255,255,0.3); transform: scale(0); animation: ripple 0.6s linear; pointer-events: none; }
+        .btn-small { padding: 0.42rem 0.75rem; font-size: 0.75rem; background: linear-gradient(135deg, var(--cyan), #0099cc); color: #0f172a; border: none; border-radius: 8px; cursor: pointer; margin: 2px; font-weight: 700; transition: all 0.3s; position: relative; overflow: hidden; box-shadow: 0 2px 10px rgba(0,240,255,0.2); }
+        .btn-small:hover { transform: translateY(-2px) scale(1.05); }
+        .btn-edit { background: linear-gradient(135deg, var(--warning), #d97706); color: white; box-shadow: 0 2px 10px rgba(245,158,11,0.2); }
+        .btn-delete { background: linear-gradient(135deg, var(--error), #dc2626); color: white; box-shadow: 0 2px 10px rgba(239,68,68,0.2); }
+        .btn-confirm { background: linear-gradient(135deg, var(--neon-green), #00cc66); color: #0f172a; box-shadow: 0 2px 10px rgba(0,255,136,0.2); }
+        .btn-save-profile { background: linear-gradient(135deg, var(--neon-green), var(--cyan)); color: #0f172a; font-size: 1.05rem; padding: 1rem; box-shadow: 0 4px 20px rgba(0,255,136,0.25); }
+
+        .card {
+            background: var(--bg-card); backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px);
+            padding: 2rem; border-radius: 20px; margin-bottom: 1.5rem;
+            border: 1px solid var(--glass-border);
+            box-shadow: 0 20px 50px rgba(0,0,0,0.2);
+            transition: all 0.4s; opacity: 0; animation: fadeInUp 0.7s ease-out forwards;
+        }
+        .card:nth-child(1) { animation-delay: 0.1s; }
+        .card:nth-child(2) { animation-delay: 0.25s; }
+        .card:nth-child(3) { animation-delay: 0.4s; }
+        .card:nth-child(4) { animation-delay: 0.55s; }
+        .card:hover { border-color: rgba(255,255,255,0.15); transform: translateY(-2px); }
+        .card h3 { margin-bottom: 1.5rem; font-size: 1.15rem; font-weight: 800; display: flex; align-items: center; gap: 0.75rem; padding-bottom: 1rem; border-bottom: 1px solid var(--glass-border); }
+        .card h3 .icon { width: 36px; height: 36px; border-radius: 10px; display: flex; align-items: center; justify-content: center; font-size: 18px; }
+        .icon-cyan { background: rgba(0,240,255,0.15); }
+        .icon-green { background: rgba(0,255,136,0.15); }
+        .icon-purple { background: rgba(139,92,246,0.15); }
+        .icon-yellow { background: rgba(245,158,11,0.15); }
+
+        .profile-card { display: flex; align-items: center; gap: 2rem; flex-wrap: wrap; padding: 1.5rem 2rem; }
+        .profile-avatar { width: 80px; height: 80px; border-radius: 20px; background: linear-gradient(135deg, var(--cyan), var(--magenta)); display: flex; align-items: center; justify-content: center; font-size: 30px; font-weight: 900; color: white; flex-shrink: 0; box-shadow: 0 8px 25px rgba(0,240,255,0.25); overflow: hidden; }
+        .profile-avatar img { width: 100%; height: 100%; object-fit: cover; }
+        .profile-details { display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 0.5rem 1.5rem; flex: 1; }
+        .profile-item { display: flex; flex-direction: column; }
+        .profile-item .p-label { font-size: 0.62rem; text-transform: uppercase; letter-spacing: 1px; color: var(--text-muted); font-weight: 700; }
+        .profile-item .p-value { font-size: 0.88rem; font-weight: 600; color: var(--text-color); }
+
+        table { width: 100%; border-collapse: separate; border-spacing: 0 6px; margin-top: 0.5rem; }
+        th { padding: 0.65rem 0.75rem; text-align: left; font-size: 0.68rem; font-weight: 700; color: var(--text-muted); text-transform: uppercase; letter-spacing: 1px; }
+        td { padding: 0.75rem; font-size: 0.83rem; background: rgba(255,255,255,0.02); transition: all 0.3s; }
+        tr td:first-child { border-radius: 10px 0 0 10px; }
+        tr td:last-child { border-radius: 0 10px 10px 0; }
+        tbody tr { animation: rowSlideIn 0.5s ease-out forwards; opacity: 0; }
+        tbody tr:nth-child(1) { animation-delay: 0.05s; }
+        tbody tr:nth-child(2) { animation-delay: 0.1s; }
+        tbody tr:nth-child(3) { animation-delay: 0.15s; }
+        tbody tr:nth-child(4) { animation-delay: 0.2s; }
+        tbody tr:nth-child(5) { animation-delay: 0.25s; }
+        tbody tr:hover td { background: rgba(255,255,255,0.05); }
+
+        .badge { display: inline-flex; align-items: center; gap: 0.4rem; padding: 0.3rem 0.65rem; border-radius: 50px; font-size: 0.7rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; }
+        .badge::before { content: ''; width: 6px; height: 6px; border-radius: 50%; }
+        .badge-pending { background: rgba(245,158,11,0.15); color: #fbbf24; border: 1px solid rgba(245,158,11,0.3); animation: floatBadge 3s ease-in-out infinite; }
+        .badge-pending::before { background: #fbbf24; box-shadow: 0 0 8px #fbbf24; }
+        .badge-confirmed { background: rgba(0,255,136,0.15); color: #34d399; border: 1px solid rgba(0,255,136,0.3); }
+        .badge-confirmed::before { background: #34d399; box-shadow: 0 0 8px #34d399; }
+        .badge-paid { background: rgba(0,255,136,0.15); color: #34d399; border: 1px solid rgba(0,255,136,0.3); }
+        .badge-paid::before { background: #34d399; box-shadow: 0 0 8px #34d399; }
+        .badge-unpaid { background: rgba(239,68,68,0.15); color: #f87171; border: 1px solid rgba(239,68,68,0.3); animation: floatBadge 3s ease-in-out infinite; }
+        .badge-unpaid::before { background: #f87171; box-shadow: 0 0 8px #f87171; }
+
+        .tabs { display: flex; gap: 0.5rem; background: var(--glass); border-radius: 16px; padding: 0.4rem; margin-bottom: 1.5rem; border: 1px solid var(--glass-border); animation: fadeInDown 0.5s ease-out; }
+        .tab-btn { flex: 1; background: transparent; border: none; padding: 0.75rem 1rem; cursor: pointer; font-weight: 700; color: var(--text-muted); border-radius: 12px; transition: all 0.4s; font-size: 0.85rem; font-family: 'Inter', sans-serif; }
+        .tab-btn.active { background: linear-gradient(135deg, var(--cyan), #0099cc); color: #0f172a; box-shadow: 0 4px 15px rgba(0,240,255,0.3); }
+        .tab-btn:not(.active):hover { color: var(--text-color); background: rgba(255,255,255,0.05); }
+
+        .stats-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1rem; margin-bottom: 1.5rem; }
+        .stat-card { background: var(--glass); border: 1px solid var(--glass-border); border-radius: 16px; padding: 1.5rem; transition: all 0.4s; opacity: 0; animation: fadeInUp 0.6s ease-out forwards; }
+        .stat-card:nth-child(1) { animation-delay: 0.05s; }
+        .stat-card:nth-child(2) { animation-delay: 0.15s; }
+        .stat-card:nth-child(3) { animation-delay: 0.25s; }
+        .stat-card:nth-child(4) { animation-delay: 0.35s; }
+        .stat-card:hover { transform: translateY(-5px); border-color: rgba(0,240,255,0.3); box-shadow: 0 10px 30px rgba(0,0,0,0.3); }
+        .stat-icon { width: 48px; height: 48px; border-radius: 14px; display: flex; align-items: center; justify-content: center; font-size: 22px; margin-bottom: 1rem; }
+        .stat-number { font-size: 2rem; font-weight: 900; line-height: 1; }
+        .stat-label { font-size: 0.72rem; color: var(--text-muted); margin-top: 0.3rem; text-transform: uppercase; letter-spacing: 1px; font-weight: 600; }
+
+        .toast-container { position: fixed; top: 90px; right: 20px; z-index: 10000; display: flex; flex-direction: column; gap: 10px; }
+        .toast { padding: 1rem 1.5rem; border-radius: 14px; display: flex; align-items: center; gap: 0.75rem; min-width: 300px; backdrop-filter: blur(20px); border: 1px solid var(--glass-border); box-shadow: 0 15px 40px rgba(0,0,0,0.3); animation: toastIn 0.5s cubic-bezier(0.4, 0, 0.2, 1); font-weight: 500; font-size: 0.88rem; position: relative; overflow: hidden; }
+        .toast.removing { animation: toastOut 0.4s ease-in forwards; }
+        .toast-success { background: rgba(0,255,136,0.12); border-color: rgba(0,255,136,0.25); color: #34d399; }
+        .toast-error { background: rgba(239,68,68,0.15); border-color: rgba(239,68,68,0.3); color: #f87171; }
+        .toast-info { background: rgba(0,240,255,0.1); border-color: rgba(0,240,255,0.25); color: var(--cyan); }
+        .toast-icon { font-size: 1.2rem; }
+        .toast-progress { position: absolute; bottom: 0; left: 0; height: 3px; border-radius: 0 0 14px 14px; }
+        .toast-success .toast-progress { background: var(--neon-green); }
+        .toast-error .toast-progress { background: var(--error); }
+        .toast-info .toast-progress { background: var(--cyan); }
+
+        .modal-overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.6); backdrop-filter: blur(8px); z-index: 1000; justify-content: center; align-items: center; }
+        .modal-overlay.active { display: flex; animation: fadeIn 0.3s ease-out; }
+        .glass-modal { background: var(--bg-card); backdrop-filter: blur(30px); -webkit-backdrop-filter: blur(30px); border: 1px solid var(--glass-border); padding: 2rem; border-radius: 20px; width: 440px; animation: scaleIn 0.4s cubic-bezier(0.4, 0, 0.2, 1); box-shadow: 0 30px 80px rgba(0,0,0,0.4); position: relative; }
+        .glass-modal::before { content: ''; position: absolute; top: -1px; left: -1px; right: -1px; bottom: -1px; border-radius: 20px; padding: 1px; z-index: -1; background: linear-gradient(135deg, var(--cyan), transparent, var(--magenta)); -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0); -webkit-mask-composite: xor; mask-composite: exclude; }
+        .modal-header { display: flex; align-items: center; gap: 0.75rem; margin-bottom: 1.5rem; }
+        .modal-header h3 { font-size: 1.15rem; font-weight: 800; }
+        .modal-icon { width: 44px; height: 44px; border-radius: 12px; display: flex; align-items: center; justify-content: center; font-size: 20px; }
+        .close-btn { position: absolute; top: 12px; right: 15px; font-size: 24px; cursor: pointer; color: var(--text-muted); width: 36px; height: 36px; border-radius: 50%; display: flex; align-items: center; justify-content: center; transition: all 0.3s; background: rgba(255,255,255,0.05); border: none; }
+        .close-btn:hover { background: rgba(239,68,68,0.15); color: var(--error); transform: rotate(90deg); }
+        .pay-icon { width: 70px; height: 70px; border-radius: 50%; background: linear-gradient(135deg, rgba(0,240,255,0.15), rgba(255,0,255,0.15)); display: flex; align-items: center; justify-content: center; margin: 0 auto 1rem; font-size: 32px; border: 1px solid rgba(0,240,255,0.2); animation: pulse 2s ease-in-out infinite; }
+        .price-tag { font-size: 2.8rem; font-weight: 900; background: linear-gradient(135deg, var(--cyan), var(--neon-green)); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text; margin: 0.8rem 0; }
+        .edit-info-row { display: flex; justify-content: space-between; padding: 0.45rem 0; border-bottom: 1px solid var(--glass-border); }
+        .edit-info-label { color: var(--text-muted); font-size: 0.8rem; font-weight: 600; }
+        .edit-info-value { color: var(--text-color); font-size: 0.8rem; font-weight: 600; text-align: right; max-width: 60%; }
+
+        .success-overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.7); backdrop-filter: blur(10px); z-index: 2000; justify-content: center; align-items: center; }
+        .success-overlay.active { display: flex; animation: fadeIn 0.3s ease-out; }
+        .success-content { text-align: center; animation: scaleIn 0.5s ease-out; }
+        .success-circle { width: 120px; height: 120px; border-radius: 50%; background: linear-gradient(135deg, var(--neon-green), var(--cyan)); display: flex; align-items: center; justify-content: center; margin: 0 auto 1.5rem; box-shadow: 0 0 60px rgba(0,255,136,0.4); animation: pulse 1s ease-in-out; }
+        .success-circle svg { width: 60px; height: 60px; }
+        .success-circle svg path { stroke: white; stroke-width: 3; fill: none; stroke-dasharray: 50; stroke-dashoffset: 50; animation: checkmark 0.6s ease-out 0.3s forwards; }
+        .success-text { font-size: 1.5rem; font-weight: 800; color: white; }
+        .success-sub { color: var(--text-muted); margin-top: 0.5rem; }
+
+        /* ===== HALL TICKET ===== */
+        .hall-ticket { 
+            background: #fff; 
+            color: #1f2937; 
+            width: 850px; 
+            padding: 45px; 
+            border-radius: 8px; 
+            position: relative; 
+            box-shadow: 0 0 60px rgba(0,0,0,0.5); 
+            max-height: 90vh; 
+            overflow-y: auto; 
+            animation: scaleIn 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+        .ht-header { 
+            text-align: center; 
+            border-bottom: 3px solid var(--primary); 
+            padding-bottom: 20px; 
+            margin-bottom: 25px; 
+            position: relative; 
+        }
+        .ht-header::after { 
+            content: ''; 
+            position: absolute; 
+            bottom: -3px; 
+            left: 0; 
+            width: 100%; 
+            height: 3px; 
+            background: linear-gradient(90deg, var(--cyan), var(--magenta), var(--neon-green)); 
+        }
+        .ht-college-name { 
+            font-size: 24px; 
+            font-weight: 900; 
+            text-transform: uppercase; 
+            letter-spacing: 2px; 
+            color: #1e3a5f; 
+        }
+        .ht-dept { 
+            font-size: 16px; 
+            font-weight: 600; 
+            color: #555; 
+            margin: 5px 0 15px; 
+        }
+        .ht-title { 
+            font-size: 22px; 
+            font-weight: 800; 
+            color: #1e3a5f; 
+            display: inline-block; 
+            padding: 10px 35px; 
+            border: 2px solid var(--primary); 
+            border-radius: 8px; 
+            letter-spacing: 3px; 
+        }
+        .ht-body { 
+            display: flex; 
+            gap: 35px; 
+            margin-bottom: 10px; 
+        }
+        .ht-details { flex: 1; }
         
-        .btn-small { padding: 0.4rem 0.8rem; font-size: 0.8rem; background: var(--primary); color: white; border: none; border-radius: 3px; cursor: pointer; margin-right: 5px; }
-        .btn-delete { background: var(--error); }
-
-        /* Cards & Tables */
-        .card { background: var(--white); padding: 1.5rem; border-radius: 8px; margin-bottom: 1.5rem; box-shadow: 0 2px 4px rgba(0,0,0,0.05); }
-        .card h3 { margin-bottom: 1rem; color: var(--primary-dark); border-bottom: 1px solid #eee; padding-bottom: 0.5rem; }
-        table { width: 100%; border-collapse: collapse; margin-top: 1rem; }
-        th, td { padding: 0.75rem; text-align: left; border-bottom: 1px solid #e5e7eb; font-size: 0.9rem; }
-        th { background-color: #f9fafb; }
-        
-        .hidden { display: none; }
-        .msg { padding: 0.8rem; margin-bottom: 1rem; border-radius: 4px; text-align: center; }
-        .error { background: #fee2e2; color: #991b1b; }
-        .success { background: #d1fae5; color: #065f46; }
-
-        /* Status Badges */
-        .status-pending { color: #d97706; font-weight: bold; }
-        .status-confirmed { color: #059669; font-weight: bold; }
-        .status-paid { color: #059669; font-weight: bold; }
-        .status-unpaid { color: #dc2626; font-weight: bold; }
-
-        /* Tabs */
-        .tabs { display: flex; gap: 1rem; border-bottom: 2px solid var(--bg-color); margin-bottom: 1rem; }
-        .tab-btn { background: none; border: none; padding: 0.5rem 1rem; cursor: pointer; font-weight: bold; color: #6b7280; }
-        .tab-btn.active { color: var(--primary); border-bottom: 3px solid var(--primary); }
-
-        /* MODALS (Hall Ticket & Payment) */
-        .modal-container {
-            display: none; 
-            position: fixed;
-            top: 0; left: 0; width: 100%; height: 100%;
-            background: rgba(0,0,0,0.5);
-            z-index: 1000;
-            justify-content: center;
-            align-items: center;
+        /* Photo Box */
+        .ht-photo-box { 
+            flex: 0 0 150px; 
+            height: 185px; 
+            border: 3px solid #2563eb; 
+            border-radius: 10px; 
+            overflow: hidden; 
+            display: flex; 
+            justify-content: center; 
+            align-items: center; 
+            color: #aaa; 
+            font-size: 12px; 
+            text-align: center; 
+            background: #f9fafb;
+            box-shadow: 0 4px 15px rgba(37, 99, 235, 0.2);
+        }
+        .ht-photo-box img { 
+            width: 100%; 
+            height: 100%; 
+            object-fit: cover; 
         }
         
-        /* Hall Ticket Styles */
-        .hall-ticket {
+        /* Square QR Section */
+        .ht-qr-section { 
+            flex: 0 0 140px; 
+            display: flex; 
+            flex-direction: column; 
+            align-items: center; 
+            gap: 8px;
+        }
+        .ht-qr-box { 
+            width: 130px !important;
+            height: 130px !important;
+            border: 3px solid #2563eb; 
+            border-radius: 10px; 
+            padding: 8px; 
             background: white;
-            width: 800px;
-            padding: 40px;
-            border: 2px solid #000;
-            position: relative;
-            box-shadow: 0 0 20px rgba(0,0,0,0.2);
-            max-height: 90vh;
-            overflow-y: auto;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 0 4px 15px rgba(37, 99, 235, 0.2);
         }
-        .ht-header {
-            text-align: center;
-            border-bottom: 2px solid #000;
-            padding-bottom: 20px;
-            margin-bottom: 20px;
+        .ht-qr-box canvas, 
+        .ht-qr-box img { 
+            display: block !important;
+            width: 110px !important;
+            height: 110px !important;
         }
-        .ht-college-name { font-size: 24px; font-weight: bold; text-transform: uppercase; margin-bottom: 5px; }
-        .ht-dept { font-size: 18px; font-weight: 600; color: #444; margin-bottom: 10px; }
-        .ht-title { font-size: 22px; font-weight: bold; background: #eee; display: inline-block; padding: 5px 20px; border: 1px solid #000; }
+        .ht-qr-label { 
+            font-size: 11px; 
+            color: #6b7280; 
+            font-weight: 700; 
+            text-transform: uppercase; 
+            letter-spacing: 0.5px; 
+            text-align: center; 
+        }
         
-        .ht-body { display: flex; gap: 30px; }
-        .ht-details { flex: 2; }
-        .ht-photo-box { flex: 1; border: 1px solid #000; height: 150px; display: flex; justify-content: center; align-items: center; color: #777; font-size: 12px; text-align: center; }
-        
-        .ht-row { display: flex; margin-bottom: 8px; font-size: 16px; }
-        .ht-label { width: 150px; font-weight: 600; }
-        .ht-value { flex: 1; border-bottom: 1px dotted #ccc; }
-
-        .ht-instructions { margin-top: 30px; border-top: 1px solid #eee; padding-top: 15px; }
-        .ht-instructions h4 { margin-bottom: 10px; text-decoration: underline; }
-        .ht-instructions ul { padding-left: 20px; font-size: 14px; color: #555; }
+        .ht-row { display: flex; margin-bottom: 10px; font-size: 14px; }
+        .ht-label { width: 140px; font-weight: 700; color: #374151; flex-shrink: 0; }
+        .ht-value { flex: 1; border-bottom: 1px dotted #ddd; padding-bottom: 2px; color: #111827; font-weight: 500; }
+        .ht-instructions { 
+            margin-top: 20px; 
+            background: #f0f9ff; 
+            border-radius: 10px; 
+            padding: 18px; 
+            border: 1px solid #bfdbfe; 
+        }
+        .ht-instructions h4 { margin-bottom: 8px; color: #1e3a5f; font-size: 13px; text-transform: uppercase; letter-spacing: 1px; }
+        .ht-instructions ul { padding-left: 20px; font-size: 12.5px; color: #4b5563; }
         .ht-instructions li { margin-bottom: 5px; }
-
-        .ht-footer { margin-top: 40px; display: flex; justify-content: space-between; }
+        .ht-footer { margin-top: 35px; display: flex; justify-content: space-between; }
         .ht-signature { text-align: center; width: 200px; }
-        .ht-signature-line { border-top: 1px solid #000; margin-top: 40px; font-weight: bold; font-size: 14px;}
-
-        .close-btn { position: absolute; top: 10px; right: 15px; font-size: 24px; cursor: pointer; color: #999; }
+        .ht-signature-line { border-top: 2px solid #333; margin-top: 50px; padding-top: 8px; font-weight: 700; font-size: 12px; color: #374151; }
+        .ht-close { position: absolute; top: 15px; right: 20px; font-size: 28px; cursor: pointer; color: #999; width: 40px; height: 40px; border-radius: 50%; display: flex; align-items: center; justify-content: center; transition: all 0.3s; background: #f3f4f6; border: none; }
+        .ht-close:hover { background: #fee2e2; color: var(--error); transform: rotate(90deg); }
         .print-btn { margin-top: 20px; text-align: center; }
 
-        /* Payment Modal Specific */
-        .payment-modal {
-            background: white;
-            padding: 2rem;
-            border-radius: 8px;
-            width: 400px;
-            text-align: center;
-        }
-        .payment-modal h3 { margin-bottom: 1rem; color: var(--primary-dark); }
-        .price-tag { font-size: 2rem; font-weight: bold; color: var(--secondary); margin: 1rem 0; }
+        .empty-state { text-align: center; padding: 3rem; color: var(--text-muted); }
+        .empty-icon { font-size: 4rem; margin-bottom: 1rem; opacity: 0.3; }
+        .empty-text { font-size: 1.1rem; font-weight: 600; }
+        .empty-sub { font-size: 0.85rem; margin-top: 0.5rem; }
 
+        .spinner { display: none; width: 20px; height: 20px; border: 3px solid rgba(255,255,255,0.2); border-top-color: white; border-radius: 50%; animation: spin 0.6s linear infinite; margin: 0 auto; }
+        .btn.loading .btn-text { opacity: 0; }
+        .btn.loading .spinner { display: block; position: absolute; top: 50%; left: 50%; margin: -10px 0 0 -10px; }
+        .hidden { display: none !important; }
+
+        @media (max-width: 768px) {
+            .auth-container { margin: 2rem 1rem; padding: 1.5rem; }
+            .data-entry-container { margin: 1rem; padding: 1.5rem; }
+            .container { padding: 0 1rem; }
+            .hall-ticket { width: 95%; padding: 20px; }
+            .ht-body { flex-direction: column; }
+            .ht-photo-box { flex: 0 0 auto; width: 130px; height: 160px; margin: 0 auto; }
+            .ht-qr-section { flex: 0 0 auto; flex-direction: row; justify-content: center; }
+            .stats-grid { grid-template-columns: repeat(2, 1fr); }
+            table { font-size: 0.72rem; }
+            td, th { padding: 0.45rem; }
+            .toast { min-width: 260px; font-size: 0.82rem; }
+            .glass-modal { width: 92%; padding: 1.5rem; }
+            .profile-card { flex-direction: column; text-align: center; gap: 1rem; }
+            .profile-details { justify-items: center; }
+            header { padding: 0.8rem 1rem; }
+            .photo-drop-zone { width: 150px; height: 185px; }
+        }
         @media print {
             body * { visibility: hidden; }
-            .modal-container, .modal-container * { visibility: visible; }
-            .hall-ticket { position: absolute; left: 0; top: 0; width: 100%; border: none; box-shadow: none; }
-            .close-btn, .print-btn { display: none; }
+            .modal-overlay, .modal-overlay * { visibility: visible; }
+            .hall-ticket { position: absolute; left: 0; top: 0; width: 100%; border: none; box-shadow: none; border-radius: 0; }
+            .ht-close, .print-btn { display: none !important; }
         }
+        ::-webkit-scrollbar { width: 8px; }
+        ::-webkit-scrollbar-track { background: rgba(255,255,255,0.02); }
+        ::-webkit-scrollbar-thumb { background: rgba(0,240,255,0.15); border-radius: 10px; }
+        ::-webkit-scrollbar-thumb:hover { background: rgba(0,240,255,0.3); }
     </style>
 </head>
 <body>
 
-    <!-- HEADER -->
-    <header>
-        <div class="logo" onclick="app.logout()">ExamPortal</div>
-        <div class="user-info">
-            <span id="headerUsername"></span>
-            <button class="btn-logout hidden" id="logoutBtn" onclick="app.logout()">Logout</button>
-        </div>
-    </header>
+<canvas id="bg-canvas"></canvas>
+<div class="scan-lines"></div>
+<div class="vignette"></div>
 
-    <!-- LOGIN VIEW -->
-    <div id="view-login" class="auth-container">
-        <h2>Login</h2>
-        <div id="login-msg" class="msg hidden"></div>
-        <form onsubmit="app.login(event)">
-            <div class="form-group">
-                <label>Username</label>
-                <input type="text" id="login-user" required>
+<div class="toast-container" id="toast-container"></div>
+
+<div class="success-overlay" id="success-overlay">
+    <div class="success-content">
+        <div class="success-circle">
+            <svg viewBox="0 0 24 24"><path d="M5 13l4 4L19 7" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        </div>
+        <div class="success-text" id="success-text">Success!</div>
+        <div class="success-sub" id="success-sub"></div>
+    </div>
+</div>
+
+<header>
+    <div class="logo">⬡ ExamPortal</div>
+    <div class="user-info">
+        <div class="user-badge hidden" id="user-badge">
+            <div class="user-avatar" id="user-avatar"></div>
+            <span id="headerUsername" style="font-weight:600;font-size:0.9rem;"></span>
+        </div>
+        <button class="btn-logout hidden" id="logoutBtn" onclick="app.logout()">↗ Logout</button>
+    </div>
+</header>
+
+<!-- LOGIN -->
+<div id="view-login" class="auth-container">
+    <div class="auth-icon">🔐</div>
+    <h2>Welcome Back</h2>
+    <p class="auth-subtitle">Sign in to access your exam portal</p>
+    <form onsubmit="app.login(event)">
+        <div class="form-group"><label>Username / Email</label><input type="text" id="login-user" placeholder="Enter your username" required></div>
+        <div class="form-group"><label>Password</label><input type="password" id="login-pass" placeholder="Enter your password" required></div>
+        <button type="submit" class="btn btn-primary" id="login-btn"><span class="btn-text">Sign In</span><div class="spinner"></div></button>
+    </form>
+    <div class="auth-link">Don't have an account? <a onclick="app.showView('signup')">Create one</a></div>
+</div>
+
+<!-- SIGNUP -->
+<div id="view-signup" class="auth-container hidden">
+    <div class="auth-icon">🎓</div>
+    <h2>Create Account</h2>
+    <p class="auth-subtitle">Sign up to get started — you'll fill details after login</p>
+    <form onsubmit="app.signup(event)">
+        <div class="form-group"><label>Full Name</label><input type="text" id="su-name" placeholder="Your full name" required></div>
+        <div class="form-group"><label>Email / Username</label><input type="email" id="su-user" placeholder="your@email.com" required></div>
+        <div class="form-group"><label>Password</label><input type="password" id="su-pass" placeholder="Create a password" required minlength="4"></div>
+        <div class="form-group"><label>Confirm Password</label><input type="password" id="su-pass2" placeholder="Re-enter password" required minlength="4"></div>
+        <button type="submit" class="btn btn-primary" id="signup-btn"><span class="btn-text">⚡ Create Account</span><div class="spinner"></div></button>
+    </form>
+    <div class="auth-link">Already have an account? <a onclick="app.showView('login')">Sign In</a></div>
+</div>
+
+<!-- DATA ENTRY SHEET -->
+<div id="view-data-entry" class="data-entry-container hidden">
+    <div class="de-header">
+        <div class="de-header-icon">📋</div>
+        <h2>Student Data Entry Sheet</h2>
+        <p>Please fill in all your personal and academic details accurately</p>
+    </div>
+
+    <form onsubmit="app.saveDataEntry(event)" id="data-entry-form">
+
+        <!-- SECTION 0: Passport Photo - SIMPLIFIED -->
+        <div class="de-section">
+            <div class="de-section-title">
+                <span class="de-section-icon" style="background:rgba(0,240,255,0.15);">📷</span>
+                Passport Photograph
+                <span style="margin-left:auto;font-size:0.7rem;color:var(--neon-green);font-weight:700;">✓ For Hall Ticket</span>
             </div>
-            <div class="form-group">
-                <label>Password</label>
-                <input type="password" id="login-pass" required>
+            <div class="photo-upload-area">
+                <div class="photo-drop-zone" id="photo-drop-zone" onclick="document.getElementById('de-photo').click()">
+                    <div class="photo-placeholder" id="photo-placeholder">
+                        <span class="photo-icon">📷</span>
+                        <span class="photo-main">Click or Drop Photo</span>
+                        <span class="photo-hint">JPG/PNG · Max 2MB</span>
+                    </div>
+                </div>
+                <input type="file" id="de-photo" accept="image/jpeg,image/png" hidden>
+                <div class="photo-actions" id="photo-actions" style="display:none;">
+                    <button type="button" class="photo-remove-btn" onclick="app.removePhoto()">🗑️ Remove Photo</button>
+                </div>
             </div>
-            <button type="submit" class="btn btn-primary">Login</button>
+            <input type="hidden" id="de-photo-data" value="">
+        </div>
+
+        <!-- SECTION 1: Personal Information -->
+        <div class="de-section">
+            <div class="de-section-title">
+                <span class="de-section-icon" style="background:rgba(0,240,255,0.15);">👤</span>
+                Personal Information
+            </div>
+            <div class="de-grid">
+                <div class="form-group">
+                    <label for="de-fname">First Name</label>
+                    <input type="text" id="de-fname" placeholder="e.g., Kumar" required>
+                    <div class="name-formatting-hint">Letters only — auto-formatted to Title Case</div>
+                    <div class="field-error-msg" id="err-fname"></div>
+                </div>
+                <div class="form-group">
+                    <label for="de-lname">Last Name / Surname</label>
+                    <input type="text" id="de-lname" placeholder="e.g., Rajan" required>
+                    <div class="name-formatting-hint">Letters only — auto-formatted to Title Case</div>
+                    <div class="field-error-msg" id="err-lname"></div>
+                </div>
+                <div class="form-group">
+                    <label for="de-dob">Date of Birth</label>
+                    <input type="date" id="de-dob" required>
+                    <div class="field-error-msg" id="err-dob"></div>
+                </div>
+                <div class="form-group">
+                    <label for="de-gender">Gender</label>
+                    <select id="de-gender" required>
+                        <option value="" disabled selected>-- Select --</option>
+                        <option>Male</option><option>Female</option><option>Other</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label for="de-blood">Blood Group</label>
+                    <select id="de-blood" required>
+                        <option value="" disabled selected>-- Select --</option>
+                        <option>A+</option><option>A-</option><option>B+</option><option>B-</option>
+                        <option>AB+</option><option>AB-</option><option>O+</option><option>O-</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label for="de-phone">Phone Number</label>
+                    <input type="tel" id="de-phone" placeholder="9876543210" required pattern="[0-9]{10}" maxlength="10">
+                    <div class="name-formatting-hint">10-digit mobile number</div>
+                    <div class="field-error-msg" id="err-phone"></div>
+                </div>
+                <div class="form-group">
+                    <label for="de-email">Email Address</label>
+                    <input type="email" id="de-email" required readonly style="opacity:0.6;cursor:not-allowed;">
+                </div>
+                <div class="form-group">
+                    <label for="de-nationality">Nationality</label>
+                    <input type="text" id="de-nationality" value="Indian" required>
+                </div>
+                <div class="form-group full">
+                    <label for="de-address">Permanent Address</label>
+                    <textarea id="de-address" placeholder="House No, Street, Area, City, State, PIN Code" required></textarea>
+                </div>
+            </div>
+        </div>
+
+        <!-- SECTION 2: Academic Information -->
+        <div class="de-section">
+            <div class="de-section-title">
+                <span class="de-section-icon" style="background:rgba(0,255,136,0.15);">📚</span>
+                Academic Information
+            </div>
+            <div class="de-grid">
+                <div class="form-group">
+                    <label for="de-roll">Roll Number</label>
+                    <input type="text" id="de-roll" placeholder="e.g., 2024-CS-101" required>
+                    <div class="field-error-msg" id="err-roll"></div>
+                </div>
+                <div class="form-group">
+                    <label for="de-regno">Register Number</label>
+                    <input type="text" id="de-regno" placeholder="e.g., 821XXXXX" required>
+                </div>
+                <div class="form-group">
+                    <label for="de-dept">Department</label>
+                    <select id="de-dept" required>
+                        <option value="" disabled selected>-- Select Department --</option>
+                        <option>Computer Science & Engineering</option><option>Cyber Security</option>
+                        <option>Information Technology</option><option>Electronics & Communication</option>
+                        <option>Mechanical Engineering</option><option>Civil Engineering</option><option>Electrical & Electronics</option><option>AI & Data Science</option><option>Biomedical Engineering</option><option>Chemical Engineering</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label for="de-year">Year of Study</label>
+                    <select id="de-year" required>
+                        <option value="" disabled selected>-- Select --</option>
+                        <option>1st Year</option><option>2nd Year</option><option>3rd Year</option><option>4th Year</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label for="de-sem">Current Semester</label>
+                    <select id="de-sem" required>
+                        <option value="" disabled selected>-- Select --</option>
+                        <option>1st Semester</option><option>2nd Semester</option><option>3rd Semester</option><option>4th Semester</option>
+                        <option>5th Semester</option><option>6th Semester</option><option>7th Semester</option><option>8th Semester</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label for="de-section">Section / Division</label>
+                    <input type="text" id="de-section" placeholder="e.g., A or CSE-A">
+                </div>
+                <div class="form-group">
+                    <label for="de-cgpa">Current CGPA</label>
+                    <input type="number" id="de-cgpa" placeholder="e.g., 8.5" step="0.01" min="0" max="10" required>
+                    <div class="name-formatting-hint">Out of 10.00</div>
+                </div>
+                <div class="form-group">
+                    <label for="de-10th">10th Mark (%)</label>
+                    <input type="number" id="de-10th" placeholder="e.g., 92" min="0" max="100" step="0.1" required>
+                </div>
+                <div class="form-group">
+                    <label for="de-12th">12th Mark (%)</label>
+                    <input type="number" id="de-12th" placeholder="e.g., 88" min="0" max="100" step="0.1" required>
+                </div>
+                <div class="form-group">
+                    <label for="de-12thboard">12th Board</label>
+                    <input type="text" id="de-12thboard" placeholder="e.g., CBSE / State Board" required>
+                </div>
+            </div>
+        </div>
+
+        <!-- SECTION 3: Guardian Information -->
+        <div class="de-section">
+            <div class="de-section-title">
+                <span class="de-section-icon" style="background:rgba(255,0,255,0.15);">👨‍👩‍👧</span>
+                Guardian Information
+            </div>
+            <div class="de-grid">
+                <div class="form-group">
+                    <label for="de-father">Father's Full Name</label>
+                    <input type="text" id="de-father" placeholder="e.g., Suresh Kumar" required>
+                    <div class="name-formatting-hint">Letters only — auto-formatted</div>
+                    <div class="field-error-msg" id="err-father"></div>
+                </div>
+                <div class="form-group">
+                    <label for="de-mother">Mother's Full Name</label>
+                    <input type="text" id="de-mother" placeholder="e.g., Lakshmi Devi" required>
+                    <div class="name-formatting-hint">Letters only — auto-formatted</div>
+                    <div class="field-error-msg" id="err-mother"></div>
+                </div>
+                <div class="form-group">
+                    <label for="de-father-occ">Father's Occupation</label>
+                    <input type="text" id="de-father-occ" placeholder="e.g., Business / Govt Employee" required>
+                </div>
+                <div class="form-group">
+                    <label for="de-father-phone">Father's / Guardian's Phone</label>
+                    <input type="tel" id="de-father-phone" placeholder="9876543210" pattern="[0-9]{10}" maxlength="10" required>
+                    <div class="name-formatting-hint">10-digit mobile number</div>
+                    <div class="field-error-msg" id="err-father-phone"></div>
+                </div>
+                <div class="form-group full">
+                    <label for="de-father-email">Father's / Guardian's Email (optional)</label>
+                    <input type="email" id="de-father-email" placeholder="guardian@email.com">
+                </div>
+            </div>
+        </div>
+
+        <!-- SECTION 4: Additional -->
+        <div class="de-section">
+            <div class="de-section-title">
+                <span class="de-section-icon" style="background:rgba(245,158,11,0.15);">📌</span>
+                Additional Information
+            </div>
+            <div class="de-grid">
+                <div class="form-group">
+                    <label for="de-community">Community / Category</label>
+                    <select id="de-community" required>
+                        <option value="" disabled selected>-- Select --</option>
+                        <option>OC / General</option><option>BC</option><option>MBC</option>
+                        <option>SC</option><option>ST</option><option>OBC</option><option>EWS</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label for="de-religion">Religion</label>
+                    <input type="text" id="de-religion" placeholder="e.g., Hindu">
+                </div>
+                <div class="form-group">
+                    <label for="de-mother-tongue">Mother Tongue</label>
+                    <input type="text" id="de-mother-tongue" placeholder="e.g., Tamil">
+                </div>
+                <div class="form-group">
+                    <label for="de-aadhar">Aadhar Number (optional)</label>
+                    <input type="text" id="de-aadhar" placeholder="XXXX XXXX XXXX" maxlength="14" pattern="[0-9 ]{14}">
+                    <div class="name-formatting-hint">12 digits — spaces auto-formatted</div>
+                </div>
+            </div>
+        </div>
+
+        <button type="submit" class="btn btn-save-profile" id="de-submit-btn" style="margin-top:0.5rem;">
+            <span class="btn-text">✅ Save & Continue to Dashboard</span>
+            <div class="spinner"></div>
+        </button>
+    </form>
+</div>
+
+<!-- STUDENT DASHBOARD - NO QR VERIFICATION -->
+<div id="view-student" class="container hidden">
+    <div class="card" id="student-profile-card"></div>
+    <div class="stats-grid" id="student-stats"></div>
+    <div class="card">
+        <h3><span class="icon icon-cyan">📝</span>Register for Exam</h3>
+        <form onsubmit="app.registerExam(event)">
+            <div style="display:flex;gap:1rem;flex-wrap:wrap;">
+                <div class="form-group" style="flex:1;min-width:200px;"><label>Roll Number</label><input type="text" id="exam-roll" required></div>
+                <div class="form-group" style="flex:2;min-width:280px;"><label>Select Exam</label><select id="exam-select" required><option value="" disabled selected>-- Choose an Exam --</option></select></div>
+            </div>
+            <button type="submit" class="btn btn-primary" style="width:auto;margin-top:0.5rem;" id="reg-btn"><span class="btn-text">⚡ Submit Registration</span><div class="spinner"></div></button>
         </form>
-        <div class="auth-link">
-            Don't have an account? <a onclick="app.showView('signup')">Sign Up</a>
-        </div>
     </div>
+    <div class="card">
+        <h3><span class="icon icon-green">📋</span>My Registrations</h3>
+        <div id="student-reg-wrapper"></div>
+    </div>
+</div>
 
-    <!-- SIGNUP VIEW -->
-    <div id="view-signup" class="auth-container hidden">
-        <h2>Student Sign Up</h2>
-        <div id="signup-msg" class="msg hidden"></div>
-        <form onsubmit="app.signup(event)">
-            <div class="form-group">
-                <label>Full Name</label>
-                <input type="text" id="su-name" required>
-            </div>
-            <div class="form-group">
-                <label>Username (Email)</label>
-                <input type="text" id="su-user" required>
-            </div>
-            <div class="form-group">
-                <label>Password</label>
-                <input type="password" id="su-pass" required>
-            </div>
-            <button type="submit" class="btn btn-primary">Create Account</button>
+<!-- ADMIN DASHBOARD - NO QR TAB -->
+<div id="view-admin" class="container hidden">
+    <div class="stats-grid" id="admin-stats"></div>
+    <div class="tabs">
+        <button class="tab-btn active" onclick="app.openAdminTab('exams')">📊 Manage Exams</button>
+        <button class="tab-btn" onclick="app.openAdminTab('registrations')">✅ Registrations</button>
+    </div>
+    <div id="admin-tab-exams" class="card">
+        <h3><span class="icon icon-purple">➕</span>Add New Exam</h3>
+        <form onsubmit="app.addExam(event)" style="display:flex;gap:1rem;flex-wrap:wrap;align-items:flex-end;">
+            <div class="form-group" style="flex:2;min-width:200px;margin-bottom:0"><label>Exam Name</label><input type="text" id="add-exam-name" placeholder="e.g., Mid-Semester CS" required></div>
+            <div class="form-group" style="flex:1;min-width:130px;margin-bottom:0"><label>Date</label><input type="date" id="add-exam-date" required></div>
+            <div class="form-group" style="flex:1;min-width:110px;margin-bottom:0"><label>Time</label><input type="time" id="add-exam-time" required></div>
+            <div class="form-group" style="flex:1;min-width:130px;margin-bottom:0"><label>Center</label><input type="text" id="add-exam-center" placeholder="Hall A" required></div>
+            <div class="form-group" style="flex:0.6;min-width:100px;margin-bottom:0"><label>Fee (₹)</label><input type="number" id="add-exam-fee" placeholder="500" required></div>
+            <button type="submit" class="btn btn-secondary" style="margin-bottom:0;height:44px;flex:0 0 auto;"><span class="btn-text">+ Add</span><div class="spinner"></div></button>
         </form>
-        <div class="auth-link">
-            Already have an account? <a onclick="app.showView('login')">Login</a>
+        <h3 style="margin-top:2rem;"><span class="icon icon-yellow">📚</span>Exam List</h3>
+        <div id="admin-exam-wrapper"></div>
+    </div>
+    <div id="admin-tab-registrations" class="card hidden">
+        <h3><span class="icon icon-green">✅</span>All Student Registrations</h3>
+        <div id="admin-reg-wrapper"></div>
+    </div>
+</div>
+
+<!-- PAYMENT MODAL -->
+<div id="payment-modal" class="modal-overlay">
+    <div class="glass-modal" style="text-align:center;">
+        <button class="close-btn" onclick="app.closePayment()">&times;</button>
+        <div class="pay-icon">💳</div>
+        <h3 style="font-size:1.2rem;font-weight:800;">Secure Payment</h3>
+        <p style="color:var(--text-muted);margin:0.4rem 0;font-size:0.85rem;">Processing payment for:</p>
+        <h4 id="pay-exam-name" style="color:var(--cyan);font-weight:700;font-size:0.95rem;"></h4>
+        <div class="price-tag">₹<span id="pay-amount">0</span></div>
+        <div class="form-group" style="text-align:left;"><label>Card Number (Demo)</label><input type="text" value="•••• •••• •••• 4242" readonly style="font-family:monospace;letter-spacing:2px;"></div>
+        <div style="display:flex;gap:10px;margin-top:1rem;">
+            <button class="btn" onclick="app.closePayment()" style="background:var(--glass);border:1px solid var(--glass-border);flex:1;">Cancel</button>
+            <button class="btn btn-secondary" style="flex:1;" onclick="app.processPayment()" id="pay-now-btn"><span class="btn-text">Pay Now</span><div class="spinner"></div></button>
         </div>
     </div>
+</div>
 
-    <!-- STUDENT DASHBOARD -->
-    <div id="view-student" class="container hidden">
-        <div class="card">
-            <h3>Register for an Exam</h3>
-            <div id="reg-msg" class="msg hidden"></div>
-            <form onsubmit="app.registerExam(event)">
-                <div style="display: flex; gap: 1rem;">
-                    <div class="form-group" style="flex:1">
-                        <label>Roll Number</label>
-                        <input type="text" id="exam-roll" placeholder="e.g., 2024-101" required>
-                    </div>
-                    <div class="form-group" style="flex:2">
-                        <label>Select Exam (Fee shown in bracket)</label>
-                        <select id="exam-select" required>
-                            <option value="" disabled selected>-- Select Exam --</option>
-                        </select>
-                    </div>
+<!-- EDIT EXAM MODAL -->
+<div id="edit-exam-modal" class="modal-overlay">
+    <div class="glass-modal">
+        <button class="close-btn" onclick="app.closeEditExam()">&times;</button>
+        <div class="modal-header"><div class="modal-icon" style="background:rgba(245,158,11,0.2);">✏️</div><h3>Edit Exam</h3></div>
+        <form onsubmit="app.saveEditExam(event)">
+            <div class="form-group"><label>Exam Name</label><input type="text" id="edit-exam-name" required></div>
+            <div style="display:flex;gap:1rem;"><div class="form-group" style="flex:1;"><label>Date</label><input type="date" id="edit-exam-date" required></div><div class="form-group" style="flex:1;"><label>Time</label><input type="time" id="edit-exam-time" required></div></div>
+            <div style="display:flex;gap:1rem;"><div class="form-group" style="flex:1;"><label>Center</label><input type="text" id="edit-exam-center" required></div><div class="form-group" style="flex:1;"><label>Fee (₹)</label><input type="number" id="edit-exam-fee" required></div></div>
+            <div style="display:flex;gap:10px;margin-top:1rem;">
+                <button type="button" class="btn" style="background:var(--glass);border:1px solid var(--glass-border);flex:1;" onclick="app.closeEditExam()">Cancel</button>
+                <button type="submit" class="btn btn-secondary" style="flex:1;">Save Changes</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- EDIT REG MODAL -->
+<div id="edit-reg-modal" class="modal-overlay">
+    <div class="glass-modal">
+        <button class="close-btn" onclick="app.closeEditReg()">&times;</button>
+        <div class="modal-header"><div class="modal-icon" style="background:rgba(0,240,255,0.15);">✏️</div><h3>Edit Registration</h3></div>
+        <div id="edit-reg-info"></div>
+        <form onsubmit="app.saveEditReg(event)" style="margin-top:1rem;">
+            <div class="form-group"><label>Roll Number</label><input type="text" id="edit-reg-roll" required></div>
+            <div style="display:flex;gap:1rem;">
+                <div class="form-group" style="flex:1;"><label>Approval Status</label><select id="edit-reg-status"><option value="pending">Pending</option><option value="confirmed">Confirmed</option></select></div>
+                <div class="form-group" style="flex:1;"><label>Payment Status</label><select id="edit-reg-payment"><option value="unpaid">Unpaid</option><option value="paid">Paid</option></select></div>
+            </div>
+            <div style="display:flex;gap:10px;margin-top:1rem;">
+                <button type="button" class="btn" style="background:var(--glass);border:1px solid var(--glass-border);flex:1;" onclick="app.closeEditReg()">Cancel</button>
+                <button type="submit" class="btn btn-secondary" style="flex:1;">Save Changes</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- HALL TICKET MODAL WITH SQUARE QR CODE -->
+<div id="hall-ticket-modal" class="modal-overlay">
+    <div class="hall-ticket">
+        <button class="ht-close" onclick="app.closeHallTicket()">&times;</button>
+        <div class="ht-header">
+            <div class="ht-college-name">SRM Valliammai Engineering College</div>
+            <div class="ht-dept" id="ht-dept"></div>
+            <div class="ht-title">HALL TICKET</div>
+        </div>
+        <div class="ht-body">
+            <div class="ht-details">
+                <div class="ht-row"><div class="ht-label">Student Name:</div><div class="ht-value" id="ht-name"></div></div>
+                <div class="ht-row"><div class="ht-label">Register No:</div><div class="ht-value" id="ht-regno"></div></div>
+                <div class="ht-row"><div class="ht-label">Roll Number:</div><div class="ht-value" id="ht-roll"></div></div>
+                <div class="ht-row"><div class="ht-label">Department:</div><div class="ht-value" id="ht-department"></div></div>
+                <div class="ht-row"><div class="ht-label">Year / Sem:</div><div class="ht-value" id="ht-yearsem"></div></div>
+                <div class="ht-row"><div class="ht-label">Section:</div><div class="ht-value" id="ht-section"></div></div>
+                <div class="ht-row"><div class="ht-label">Exam Name:</div><div class="ht-value" id="ht-exam"></div></div>
+                <div class="ht-row"><div class="ht-label">Date:</div><div class="ht-value" id="ht-date"></div></div>
+                <div class="ht-row"><div class="ht-label">Time:</div><div class="ht-value" id="ht-time"></div></div>
+                <div class="ht-row"><div class="ht-label">Venue:</div><div class="ht-value" id="ht-center"></div></div>
+                <div class="ht-row"><div class="ht-label">Father's Name:</div><div class="ht-value" id="ht-father"></div></div>
+            </div>
+            <div style="display:flex;flex-direction:column;gap:15px;align-items:center;">
+                <!-- Photo Box -->
+                <div class="ht-photo-box" id="ht-photo-box">
+                    <span style="color:#aaa;font-size:11px;text-align:center;">📷<br>No Photo</span>
                 </div>
-                <button type="submit" class="btn btn-primary" style="width: auto; margin-top: 0.5rem;">Submit Registration</button>
-            </form>
-        </div>
-
-        <div class="card">
-            <h3>My Registrations</h3>
-            <table>
-                <thead><tr><th>Roll No</th><th>Exam</th><th>Timings</th><th>Payment</th><th>Status</th><th>Action</th></tr></thead>
-                <tbody id="student-reg-list"></tbody>
-            </table>
-        </div>
-    </div>
-
-    <!-- ADMIN DASHBOARD -->
-    <div id="view-admin" class="container hidden">
-        <div class="tabs">
-            <button class="tab-btn active" onclick="app.openAdminTab('exams')">Manage Exams</button>
-            <button class="tab-btn" onclick="app.openAdminTab('registrations')">Confirm Registrations</button>
-        </div>
-
-        <!-- Admin: Manage Exams -->
-        <div id="admin-tab-exams" class="card">
-            <h3>Add New Exam</h3>
-            <form onsubmit="app.addExam(event)" style="display: flex; gap: 1rem; flex-wrap: wrap;">
-                <input type="text" id="add-exam-name" placeholder="Exam Name" required style="flex:2">
-                <input type="date" id="add-exam-date" required style="flex:1">
-                <input type="time" id="add-exam-time" required style="flex:1">
-                <input type="text" id="add-exam-center" placeholder="Center" required style="flex:1">
-                <!-- Fee Input -->
-                <input type="number" id="add-exam-fee" placeholder="Fee (₹)" required style="flex:1">
-                <button type="submit" class="btn btn-secondary">Add</button>
-            </form>
-            
-            <h3 style="margin-top: 2rem;">Exam List</h3>
-            <table>
-                <thead><tr><th>Name</th><th>Date</th><th>Time</th><th>Center</th><th>Fee</th><th>Action</th></tr></thead>
-                <tbody id="admin-exam-list"></tbody>
-            </table>
-        </div>
-
-        <!-- Admin: Confirm Registrations -->
-        <div id="admin-tab-registrations" class="card hidden">
-            <h3>Student Registrations</h3>
-            <table>
-                <thead><tr><th>Roll No</th><th>Student</th><th>Exam</th><th>Payment Status</th><th>Approval</th><th>Action</th></tr></thead>
-                <tbody id="admin-reg-list"></tbody>
-            </table>
-        </div>
-    </div>
-
-    <!-- PAYMENT MODAL -->
-    <div id="payment-modal" class="modal-container">
-        <div class="payment-modal">
-            <h3>Secure Payment</h3>
-            <p>Processing payment for:</p>
-            <h4 id="pay-exam-name" style="color:var(--primary)"></h4>
-            <div class="price-tag">₹ <span id="pay-amount">0</span></div>
-            <div class="form-group">
-                <label>Card Number (Demo)</label>
-                <input type="text" placeholder="4242 4242 4242 4242" value="4242 4242 4242 4242" readonly>
-            </div>
-            <div style="display:flex; gap:10px">
-                <button class="btn btn-secondary" style="flex:1" onclick="app.closePayment()">Cancel</button>
-                <button class="btn btn-primary" style="flex:1" onclick="app.processPayment()">Pay Now</button>
-            </div>
-        </div>
-    </div>
-
-    <!-- HALL TICKET MODAL -->
-    <div id="hall-ticket-modal" class="modal-container">
-        <div class="hall-ticket">
-            <span class="close-btn" onclick="app.closeHallTicket()">&times;</span>
-            
-            <div class="ht-header">
-                <div class="ht-college-name">SRM Valliammai Engineering College</div>
-                <div class="ht-dept">Department of Cyber Security</div>
-                <div class="ht-title">HALL TICKET</div>
-            </div>
-
-            <div class="ht-body">
-                <div class="ht-details">
-                    <div class="ht-row">
-                        <div class="ht-label">Student Name:</div>
-                        <div class="ht-value" id="ht-name"></div>
-                    </div>
-                    <div class="ht-row">
-                        <div class="ht-label">Register No:</div>
-                        <div class="ht-value" id="ht-roll"></div>
-                    </div>
-                    <div class="ht-row">
-                        <div class="ht-label">Exam Name:</div>
-                        <div class="ht-value" id="ht-exam"></div>
-                    </div>
-                    <div class="ht-row">
-                        <div class="ht-label">Date:</div>
-                        <div class="ht-value" id="ht-date"></div>
-                    </div>
-                    <div class="ht-row">
-                        <div class="ht-label">Time:</div>
-                        <div class="ht-value" id="ht-time"></div>
-                    </div>
-                    <div class="ht-row">
-                        <div class="ht-label">Venue:</div>
-                        <div class="ht-value" id="ht-center"></div>
-                    </div>
+                <!-- Square QR Code Box -->
+                <div class="ht-qr-section">
+                    <div class="ht-qr-box" id="ht-qr-box"></div>
+                    <div class="ht-qr-label">Scan to Verify</div>
                 </div>
             </div>
-
-            <div class="ht-instructions">
-                <h4>Important Instructions:</h4>
-                <ul>
-                    <li>Bring this hall ticket to the examination hall.</li>
-                    <li>No electronic devices (mobile phones, smart watches) are allowed.</li>
-                    <li>Carry a valid ID proof (College ID) along with this ticket.</li>
-                    <li>Enter the hall 30 minutes before the commencement of the exam.</li>
-                </ul>
-            </div>
-
-            <div class="ht-footer">
-                <div class="ht-signature">
-                    <div class="ht-signature-line">Student Signature</div>
-                </div>
-                <div class="ht-signature">
-                    <div class="ht-signature-line">Controller of Examinations</div>
-                </div>
-            </div>
-
-            <div class="print-btn">
-                <button class="btn btn-primary" onclick="window.print()">Print Hall Ticket</button>
-            </div>
         </div>
+        <div class="ht-instructions">
+            <h4>⚠️ Important Instructions</h4>
+            <ul>
+                <li>Bring this hall ticket to the examination hall without fail.</li>
+                <li>No electronic devices (mobile phones, smart watches) are permitted.</li>
+                <li>Carry a valid College ID along with this hall ticket.</li>
+                <li>Report to the hall 30 minutes before the exam commences.</li>
+                <li>Any malpractice will lead to immediate disqualification.</li>
+                <li>This hall ticket contains a unique QR code for verification.</li>
+            </ul>
+        </div>
+        <div class="ht-footer">
+            <div class="ht-signature"><div class="ht-signature-line">Student Signature</div></div>
+            <div class="ht-signature"><div class="ht-signature-line">Controller of Examinations</div></div>
+        </div>
+        <div class="print-btn"><button class="btn btn-primary" onclick="window.print()" style="width:auto;padding:0.7rem 2rem;background:#2563eb;color:white;box-shadow:0 4px 15px rgba(37,99,235,0.3);">🖨️ Print Hall Ticket</button></div>
     </div>
+</div>
 
-    <script>
-        const app = {
-            currentPaymentId: null, // Store ID currently being paid for
+<script>
+// ===== CANVAS BACKGROUND =====
+(function(){
+    const canvas=document.getElementById('bg-canvas'),ctx=canvas.getContext('2d');
+    let w,h,gridOffset=0;const particles=[],shapes=[];
+    function resize(){w=canvas.width=window.innerWidth;h=canvas.height=window.innerHeight;}resize();
+    window.addEventListener('resize',resize);
+    for(let i=0;i<35;i++) particles.push({x:Math.random()*w,y:Math.random()*h,vx:(Math.random()-0.5)*0.5,vy:(Math.random()-0.5)*0.5,size:1+Math.random()*2,alpha:0.2+Math.random()*0.5});
+    const sc=['rgba(0,240,255,','rgba(255,0,255,','rgba(0,255,136,'];
+    for(let i=0;i<6;i++) shapes.push({x:Math.random()*w,y:Math.random()*h*0.55,size:15+Math.random()*35,rotation:Math.random()*Math.PI*2,rotSpeed:(Math.random()-0.5)*0.008,vx:(Math.random()-0.5)*0.25,vy:(Math.random()-0.5)*0.15,sides:[3,4,5,6,8][Math.floor(Math.random()*5)],colorBase:sc[Math.floor(Math.random()*3)],alpha:0.08+Math.random()*0.12});
+    function drawPoly(cx,cy,r,s,rot){ctx.beginPath();for(let i=0;i<=s;i++){const a=(Math.PI*2/s)*i+rot;const px=cx+Math.max(1,r)*Math.cos(a);const py=cy+Math.max(1,r)*Math.sin(a);i===0?ctx.moveTo(px,py):ctx.lineTo(px,py);}ctx.closePath();}
+    function animate(){
+        ctx.clearRect(0,0,w,h);
+        const vY=h*0.42;
+        const gg=ctx.createRadialGradient(w/2,vY,0,w/2,vY,Math.max(1,w*0.35));
+        gg.addColorStop(0,'rgba(0,240,255,0.08)');gg.addColorStop(0.5,'rgba(255,0,255,0.03)');gg.addColorStop(1,'rgba(0,0,0,0)');
+        ctx.fillStyle=gg;ctx.fillRect(0,vY-w*0.35,w,w*0.7);
+        gridOffset+=0.6;const gs=45,tgh=h-vY;ctx.lineWidth=1;
+        for(let i=0;i<25;i++){const rawT=((i*gs+gridOffset)%(25*gs))/(25*gs);const t=Math.pow(rawT,1.8);const y=vY+tgh*t;ctx.strokeStyle=`rgba(0,240,255,${t*0.15})`;ctx.beginPath();ctx.moveTo(0,y);ctx.lineTo(w,y);ctx.stroke();}
+        for(let i=-12;i<=12;i++){const x=w/2+i*(w*0.8/12);const a=0.04+Math.abs(i/12)*0.08;ctx.strokeStyle=`rgba(0,240,255,${a})`;ctx.beginPath();ctx.moveTo(w/2,vY);ctx.lineTo(x,h);ctx.stroke();}
+        ctx.strokeStyle='rgba(0,240,255,0.25)';ctx.lineWidth=1.5;ctx.beginPath();ctx.moveTo(0,vY);ctx.lineTo(w,vY);ctx.stroke();ctx.lineWidth=1;
+        shapes.forEach(s=>{s.x+=s.vx;s.y+=s.vy;s.rotation+=s.rotSpeed;if(s.x<-60)s.x=w+60;if(s.x>w+60)s.x=-60;if(s.y<-60)s.y=h*0.55+60;if(s.y>h*0.55+60)s.y=-60;ctx.strokeStyle=s.colorBase+s.alpha+')';ctx.lineWidth=1;drawPoly(s.x,s.y,s.size,s.sides,s.rotation);ctx.stroke();ctx.strokeStyle=s.colorBase+(s.alpha*0.5)+')';drawPoly(s.x,s.y,s.size*0.5,s.sides,-s.rotation*1.5);ctx.stroke();});
+        particles.forEach(p=>{p.x+=p.vx;p.y+=p.vy;if(p.x<0)p.x=w;if(p.x>w)p.x=0;if(p.y<0)p.y=h;if(p.y>h)p.y=0;ctx.beginPath();ctx.arc(p.x,p.y,Math.max(0.5,p.size),0,Math.PI*2);ctx.fillStyle=`rgba(255,255,255,${p.alpha})`;ctx.fill();});
+        for(let i=0;i<particles.length;i++)for(let j=i+1;j<particles.length;j++){const dx=particles[i].x-particles[j].x,dy=particles[i].y-particles[j].y,d=Math.sqrt(dx*dx+dy*dy);if(d<150){ctx.strokeStyle=`rgba(0,240,255,${(1-d/150)*0.1})`;ctx.beginPath();ctx.moveTo(particles[i].x,particles[i].y);ctx.lineTo(particles[j].x,particles[j].y);ctx.stroke();}}
+        requestAnimationFrame(animate);
+    }animate();
+})();
 
-            // --- 1. INITIALIZATION & DATA ---
-            init: function() {
-                let users = this.get('users');
-                if (!users) users = [];
-                
-                const adminExists = users.some(u => u.username === 'admin');
-                if (!adminExists) {
-                    users.push({ id: 1, username: 'admin', password: 'admin123', role: 'admin', name: 'Administrator' });
-                    this.save('users', users);
-                }
+// ===== RIPPLE EFFECT =====
+document.addEventListener('click',function(e){const btn=e.target.closest('.btn,.btn-small');if(!btn)return;const r=document.createElement('span');r.className='ripple';const rect=btn.getBoundingClientRect();const sz=Math.max(rect.width,rect.height);r.style.width=r.style.height=sz+'px';r.style.left=(e.clientX-rect.left-sz/2)+'px';r.style.top=(e.clientY-rect.top-sz/2)+'px';btn.appendChild(r);setTimeout(()=>r.remove(),600);});
 
-                const session = this.get('session');
-                if (session) {
-                    this.updateUI(session);
-                } else {
-                    this.showView('login');
-                }
-            },
+// ===== TOAST NOTIFICATIONS =====
+function showToast(msg,type='info',dur=3000){const c=document.getElementById('toast-container');const t=document.createElement('div');t.className=`toast toast-${type}`;const icons={success:'✓',error:'✕',info:'ℹ'};t.innerHTML=`<span class="toast-icon">${icons[type]||'ℹ'}</span><span>${msg}</span><div class="toast-progress" style="animation-duration:${dur}ms"></div>`;c.appendChild(t);setTimeout(()=>{t.classList.add('removing');setTimeout(()=>t.remove(),400);},dur);}
 
-            get: (key) => JSON.parse(localStorage.getItem(key)),
-            save: (key, data) => localStorage.setItem(key, JSON.stringify(data)),
+function showSuccess(text,sub,cb){const o=document.getElementById('success-overlay');document.getElementById('success-text').textContent=text;document.getElementById('success-sub').textContent=sub||'';o.classList.add('active');const p=o.querySelector('svg path');p.style.animation='none';p.offsetHeight;p.style.animation='checkmark 0.6s ease-out 0.3s forwards';setTimeout(()=>{o.classList.remove('active');if(cb)cb();},2000);}
 
-            // --- 2. AUTHENTICATION ---
-            login: function(e) {
-                e.preventDefault();
-                const username = document.getElementById('login-user').value;
-                const password = document.getElementById('login-pass').value;
-                const users = this.get('users') || [];
-                
-                const user = users.find(u => u.username === username && u.password === password);
-                const msgDiv = document.getElementById('login-msg');
+function setBtnLoading(id,l){const b=document.getElementById(id);if(!b)return;if(l){b.classList.add('loading');b.disabled=true;}else{b.classList.remove('loading');b.disabled=false;}}
 
-                if (user) {
-                    this.save('session', user);
-                    this.updateUI(user);
-                } else {
-                    msgDiv.textContent = "Invalid username or password.";
-                    msgDiv.className = "msg error";
-                }
-            },
+function toTitleCase(str){return str.replace(/\b\w+/g,w=>w.charAt(0).toUpperCase()+w.slice(1).toLowerCase());}
+function isValidName(str){return /^[A-Za-z\s]+$/.test(str.trim())&&str.trim().length>=2;}
+function formatAadhar(input){let v=input.value.replace(/\D/g,'').substring(0,12);input.value=v.replace(/(\d{4})(?=\d)/g,'$1 ');}
 
-            signup: function(e) {
-                e.preventDefault();
-                const name = document.getElementById('su-name').value;
-                const username = document.getElementById('su-user').value;
-                const password = document.getElementById('su-pass').value;
-                const msgDiv = document.getElementById('signup-msg');
-                let users = this.get('users') || [];
+// ===== SIMPLIFIED PHOTO MODULE (NO VALIDATION) =====
+const photoModule = {
+    compressedData: null,
 
-                if (users.some(u => u.username === username)) {
-                    msgDiv.textContent = "Username already exists!";
-                    msgDiv.className = "msg error";
-                    return;
-                }
-
-                const newUser = { id: Date.now(), username, password, name, role: 'student' };
-                users.push(newUser);
-                this.save('users', users);
-                
-                msgDiv.textContent = "Account created! Please login.";
-                msgDiv.className = "msg success";
-                setTimeout(() => this.showView('login'), 1500);
-            },
-
-            logout: function() {
-                localStorage.removeItem('session');
-                location.reload();
-            },
-
-            // --- 3. VIEW MANAGEMENT ---
-            showView: function(viewName) {
-                document.querySelectorAll('.auth-container, .container').forEach(el => el.classList.add('hidden'));
-                document.getElementById(`view-${viewName}`).classList.remove('hidden');
-            },
-
-            updateUI: function(user) {
-                document.getElementById('logoutBtn').classList.remove('hidden');
-                document.getElementById('headerUsername').textContent = `Welcome, ${user.name}`;
-                
-                if (user.role === 'admin') {
-                    this.showView('admin');
-                    this.loadAdminData();
-                } else {
-                    this.showView('student');
-                    this.loadStudentData();
-                }
-            },
-
-            // --- 4. STUDENT LOGIC ---
-            loadStudentData: function() {
-                const exams = this.get('exams') || [];
-                const select = document.getElementById('exam-select');
-                select.innerHTML = '<option value="" disabled selected>-- Select Exam --</option>';
-                
-                exams.forEach(ex => {
-                    select.innerHTML += `<option value="${ex.id}">${ex.name} - ${ex.date} (Fee: ₹${ex.fee})</option>`;
-                });
-
-                const session = this.get('session');
-                const regs = (this.get('registrations') || []).filter(r => r.studentId === session.id);
-                const tbody = document.getElementById('student-reg-list');
-                tbody.innerHTML = '';
-                
-                regs.forEach(r => {
-                    // Payment Status Logic
-                    let payStatusHtml = `<span class="status-unpaid">Unpaid</span>`;
-                    let payActionHtml = `<button class="btn-small btn-purple" onclick="app.initPayment(${r.id})">Pay ₹${r.fee}</button>`;
-
-                    if (r.paymentStatus === 'paid') {
-                        payStatusHtml = `<span class="status-paid">Paid</span>`;
-                        payActionHtml = `<span style="color:#10b981; font-size:12px">Payment Done</span>`;
-                    }
-
-                    // Approval Status Logic
-                    let approvalHtml = `<span class="status-pending">Pending</span>`;
-                    let downloadHtml = '-';
-
-                    // Only allow download if Paid AND Confirmed
-                    if (r.status === 'confirmed' && r.paymentStatus === 'paid') {
-                        approvalHtml = `<span class="status-confirmed">Confirmed</span>`;
-                        downloadHtml = `<button class="btn-small" onclick="app.showHallTicket(${r.id})">Download Hall Ticket</button>`;
-                    } else if (r.status === 'confirmed') {
-                        approvalHtml = `<span class="status-confirmed">Confirmed</span>`;
-                        downloadHtml = `<span style="font-size:10px; color:#777">Payment Required</span>`;
-                    }
-
-                    tbody.innerHTML += `<tr>
-                        <td>${r.rollNo}</td>
-                        <td>${r.examName}</td>
-                        <td>${r.examDate} (${r.examTime || 'TBD'})</td>
-                        <td>${payStatusHtml}</td>
-                        <td>${approvalHtml}</td>
-                        <td>
-                            ${payActionHtml}<br><br>
-                            ${downloadHtml}
-                        </td>
-                    </tr>`;
-                });
-            },
-
-            registerExam: function(e) {
-                e.preventDefault();
-                const session = this.get('session');
-                const rollNo = document.getElementById('exam-roll').value;
-                const examId = document.getElementById('exam-select').value;
-                const exams = this.get('exams') || [];
-                const selectedExam = exams.find(e => e.id == examId);
-                
-                if(!selectedExam) return alert("Please select an exam.");
-
-                let regs = this.get('registrations') || [];
-                if(regs.some(r => r.studentId === session.id && r.examId === examId)) {
-                    alert("You already registered for this exam.");
-                    return;
-                }
-
-                const newReg = {
-                    id: Date.now(),
-                    studentId: session.id,
-                    studentName: session.name,
-                    studentEmail: session.username,
-                    examId: examId,
-                    examName: selectedExam.name,
-                    examDate: selectedExam.date,
-                    examTime: selectedExam.time,
-                    examCenter: selectedExam.center,
-                    fee: selectedExam.fee,
-                    rollNo: rollNo,
-                    status: 'pending', // Admin Approval
-                    paymentStatus: 'unpaid' // Payment Status
+    compressImage(file, maxW, maxH, quality) {
+        return new Promise((resolve) => {
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                const img = new Image();
+                img.onload = function() {
+                    let w = img.width, h = img.height;
+                    if(w > maxW) { h = h * (maxW / w); w = maxW; }
+                    if(h > maxH) { w = w * (maxH / h); h = maxH; }
+                    const canvas = document.createElement('canvas');
+                    canvas.width = w; canvas.height = h;
+                    const ctx = canvas.getContext('2d');
+                    ctx.drawImage(img, 0, 0, w, h);
+                    resolve(canvas.toDataURL('image/jpeg', quality));
                 };
+                img.src = e.target.result;
+            };
+            reader.readAsDataURL(file);
+        });
+    },
 
-                regs.push(newReg);
-                this.save('registrations', regs);
-                
-                const msgDiv = document.getElementById('reg-msg');
-                msgDiv.textContent = "Successfully registered! Please proceed to payment.";
-                msgDiv.className = "msg success";
-                document.getElementById('exam-roll').value = '';
-                this.loadStudentData();
-            },
+    async handlePhotoUpload(file) {
+        try {
+            this.compressedData = await this.compressImage(file, 300, 400, 0.75);
+            document.getElementById('de-photo-data').value = this.compressedData;
+            
+            // Show preview
+            const zone = document.getElementById('photo-drop-zone');
+            zone.innerHTML = `<img src="${this.compressedData}" alt="Photo Preview" style="width:100%;height:100%;object-fit:cover;border-radius:14px;">`;
+            zone.classList.add('has-image');
+            document.getElementById('photo-actions').style.display = 'flex';
+            
+            showToast('✅ Photo uploaded successfully!', 'success');
+            return true;
+        } catch(err) {
+            showToast('❌ Failed to process photo', 'error');
+            console.error('Photo error:', err);
+            return false;
+        }
+    },
 
-            // --- PAYMENT LOGIC ---
-            initPayment: function(regId) {
-                const regs = this.get('registrations') || [];
-                const reg = regs.find(r => r.id === regId);
-                if(!reg) return;
+    reset() {
+        this.compressedData = null;
+        document.getElementById('de-photo-data').value = '';
+        const zone = document.getElementById('photo-drop-zone');
+        zone.innerHTML = `<div class="photo-placeholder" id="photo-placeholder"><span class="photo-icon">📷</span><span class="photo-main">Click or Drop Photo</span><span class="photo-hint">JPG/PNG · Max 2MB</span></div>`;
+        zone.classList.remove('has-image');
+        document.getElementById('photo-actions').style.display = 'none';
+        document.getElementById('de-photo').value = '';
+    }
+};
 
-                this.currentPaymentId = regId;
-                document.getElementById('pay-exam-name').innerText = reg.examName;
-                document.getElementById('pay-amount').innerText = reg.fee;
-                document.getElementById('payment-modal').style.display = 'flex';
-            },
+// ===== MAIN APPLICATION =====
+const app = {
+    currentPaymentId: null, currentEditExamId: null, currentEditRegId: null,
 
-            closePayment: function() {
-                document.getElementById('payment-modal').style.display = 'none';
-                this.currentPaymentId = null;
-            },
+    init: function() {
+        let users = this.get('users'); if(!users) users = [];
+        if(!users.some(u => u.username === 'admin')) {
+            users.push({ id: 1, username: 'admin', password: 'admin123', role: 'admin', name: 'Administrator', profileComplete: true });
+            this.save('users', users);
+        }
+        let exams = this.get('exams');
+        if(!exams || exams.length === 0) {
+            exams = [
+                { id: 1001, name: 'Mid-Semester - Cyber Forensics', date: '2025-08-15', time: '10:00', center: 'Main Hall A', fee: 500 },
+                { id: 1002, name: 'End-Semester - Network Security', date: '2025-09-20', time: '14:00', center: 'Block B - Hall 3', fee: 750 },
+                { id: 1003, name: 'Internal Assessment - Cryptography', date: '2025-07-28', time: '09:30', center: 'CS Lab 2', fee: 300 },
+            ];
+            this.save('exams', exams);
+        }
+        this.setupPhotoHandlers();
+        const session = this.get('session');
+        if(session) this.updateUI(session); else this.showView('login');
+    },
 
-            processPayment: function() {
-                if(!this.currentPaymentId) return;
-                
-                let regs = this.get('registrations') || [];
-                const index = regs.findIndex(r => r.id === this.currentPaymentId);
-                
-                if(index !== -1) {
-                    regs[index].paymentStatus = 'paid';
-                    this.save('registrations', regs);
-                    this.closePayment();
-                    alert("Payment Successful!");
-                    this.loadStudentData(); // Refresh UI
-                }
-            },
+    get: (k) => JSON.parse(localStorage.getItem(k)),
+    save: (k, d) => localStorage.setItem(k, JSON.stringify(d)),
 
-            showHallTicket: function(regId) {
-                const regs = this.get('registrations') || [];
-                const reg = regs.find(r => r.id === regId);
-                
-                if(!reg) return;
+    // ===== SIMPLE PHOTO HANDLERS =====
+    setupPhotoHandlers: function() {
+        const fileInput = document.getElementById('de-photo');
+        const dropZone = document.getElementById('photo-drop-zone');
 
-                document.getElementById('ht-name').innerText = reg.studentName;
-                document.getElementById('ht-roll').innerText = reg.rollNo;
-                document.getElementById('ht-exam').innerText = reg.examName;
-                document.getElementById('ht-date').innerText = reg.examDate;
-                document.getElementById('ht-time').innerText = reg.examTime || 'Not Specified';
-                document.getElementById('ht-center').innerText = reg.examCenter;
-
-                document.getElementById('hall-ticket-modal').style.display = 'flex';
-            },
-
-            closeHallTicket: function() {
-                document.getElementById('hall-ticket-modal').style.display = 'none';
-            },
-
-            // --- 5. ADMIN LOGIC ---
-            openAdminTab: function(tab) {
-                document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
-                document.querySelectorAll('[id^="admin-tab"]').forEach(t => t.classList.add('hidden'));
-                
-                if(tab === 'exams') {
-                    document.querySelector('.tab-btn:first-child').classList.add('active');
-                    document.getElementById('admin-tab-exams').classList.remove('hidden');
-                    this.loadAdminData();
-                } else {
-                    document.querySelector('.tab-btn:last-child').classList.add('active');
-                    document.getElementById('admin-tab-registrations').classList.remove('hidden');
-                    this.loadAdminRegistrations();
-                }
-            },
-
-            loadAdminData: function() {
-                const exams = this.get('exams') || [];
-                const examBody = document.getElementById('admin-exam-list');
-                examBody.innerHTML = '';
-                exams.forEach(e => {
-                    examBody.innerHTML += `<tr>
-                        <td>${e.name}</td>
-                        <td>${e.date}</td>
-                        <td>${e.time || 'N/A'}</td>
-                        <td>${e.center}</td>
-                        <td>₹${e.fee}</td>
-                        <td><button class="btn-small btn-delete" onclick="app.deleteExam(${e.id})">Delete</button></td>
-                    </tr>`;
-                });
-            },
-
-            loadAdminRegistrations: function() {
-                const regs = this.get('registrations') || [];
-                const regBody = document.getElementById('admin-reg-list');
-                regBody.innerHTML = '';
-                
-                if(regs.length === 0) {
-                    regBody.innerHTML = '<tr><td colspan="6" style="text-align:center">No registrations found</td></tr>';
-                    return;
-                }
-
-                regs.forEach(r => {
-                    // Payment Status Badge
-                    let payStatus = r.paymentStatus === 'paid' 
-                        ? `<span class="status-paid">Paid</span>` 
-                        : `<span class="status-unpaid">Unpaid</span>`;
-
-                    // Approval Status Badge
-                    let appStatus = r.status === 'confirmed' 
-                        ? `<span class="status-confirmed">Confirmed</span>` 
-                        : `<span class="status-pending">Pending</span>`;
-
-                    let actionHtml = r.status === 'confirmed' 
-                        ? `<span style="color:green; font-size:12px">Approved</span>` 
-                        : `<button class="btn-small btn-warning" onclick="app.confirmReg(${r.id})">Confirm</button>`;
-
-                    regBody.innerHTML += `<tr>
-                        <td>${r.rollNo}</td>
-                        <td>${r.studentName}<br><small style="color:#777">${r.studentEmail}</small></td>
-                        <td>${r.examName}<br><small>${r.examDate} (${r.examTime || 'TBD'})</small></td>
-                        <td>${payStatus}</td>
-                        <td>${appStatus}</td>
-                        <td>${actionHtml}</td>
-                    </tr>`;
-                });
-            },
-
-            addExam: function(e) {
-                e.preventDefault();
-                const name = document.getElementById('add-exam-name').value;
-                const date = document.getElementById('add-exam-date').value;
-                const time = document.getElementById('add-exam-time').value;
-                const center = document.getElementById('add-exam-center').value;
-                const fee = document.getElementById('add-exam-fee').value;
-
-                let exams = this.get('exams') || [];
-                exams.push({ id: Date.now(), name, date, time, center, fee });
-                this.save('exams', exams);
-                
-                // Clear inputs
-                document.getElementById('add-exam-name').value = '';
-                document.getElementById('add-exam-time').value = '';
-                document.getElementById('add-exam-center').value = '';
-                document.getElementById('add-exam-fee').value = '';
-                
-                this.loadAdminData();
-            },
-
-            confirmReg: function(id) {
-                let regs = this.get('registrations');
-                const index = regs.findIndex(r => r.id === id);
-                if(index !== -1) {
-                    regs[index].status = 'confirmed';
-                    this.save('registrations', regs);
-                    this.loadAdminRegistrations();
-                }
-            },
-
-            deleteExam: function(id) {
-                if(confirm("Delete this exam?")) {
-                    let exams = this.get('exams');
-                    exams = exams.filter(e => e.id !== id);
-                    this.save('exams', exams);
-                    this.loadAdminData();
-                }
+        fileInput.addEventListener('change', async function(e) {
+            if (e.target.files && e.target.files[0]) {
+                await photoModule.handlePhotoUpload(e.target.files[0]);
             }
-        };
+        });
 
-        // Start App
-        app.init();
-    </script>
+        dropZone.addEventListener('dragover', function(e) {
+            e.preventDefault(); e.stopPropagation();
+            this.classList.add('dragover');
+        });
+        dropZone.addEventListener('dragleave', function(e) {
+            e.preventDefault(); e.stopPropagation();
+            this.classList.remove('dragover');
+        });
+        dropZone.addEventListener('drop', async function(e) {
+            e.preventDefault(); e.stopPropagation();
+            this.classList.remove('dragover');
+            if (e.dataTransfer.files && e.dataTransfer.files[0]) {
+                await photoModule.handlePhotoUpload(e.dataTransfer.files[0]);
+            }
+        });
+    },
+
+    removePhoto: function() {
+        photoModule.reset();
+        showToast('Photo removed', 'info');
+    },
+
+    // ===== AUTHENTICATION =====
+    login: function(e) {
+        e.preventDefault();
+        const username = document.getElementById('login-user').value.trim();
+        const password = document.getElementById('login-pass').value;
+        const users = this.get('users') || [];
+        const user = users.find(u => u.username === username && u.password === password);
+        setBtnLoading('login-btn', true);
+        setTimeout(() => {
+            setBtnLoading('login-btn', false);
+            if(user) {
+                this.save('session', user);
+                showSuccess('Welcome!', `Logged in as ${user.name}`, () => this.updateUI(user));
+            } else {
+                showToast('Invalid username or password', 'error');
+                document.getElementById('login-pass').value = '';
+            }
+        }, 800);
+    },
+
+    signup: function(e) {
+        e.preventDefault();
+        const pass = document.getElementById('su-pass').value;
+        const pass2 = document.getElementById('su-pass2').value;
+        if(pass !== pass2) { showToast('Passwords do not match!', 'error'); return; }
+        const name = document.getElementById('su-name').value.trim();
+        if(!isValidName(name)) { showToast('Name must contain only letters (at least 2)', 'error'); return; }
+        const username = document.getElementById('su-user').value.trim();
+        let users = this.get('users') || [];
+        if(users.some(u => u.username === username)) { showToast('Email already registered!', 'error'); return; }
+        setBtnLoading('signup-btn', true);
+        setTimeout(() => {
+            setBtnLoading('signup-btn', false);
+            users.push({ id: Date.now(), username, password: pass, role: 'student', name: toTitleCase(name), profileComplete: false });
+            this.save('users', users);
+            showSuccess('Account Created!', 'Sign in to continue', () => { this.showView('login'); document.getElementById('login-user').value = username; });
+        }, 1000);
+    },
+
+    logout: function() { localStorage.removeItem('session'); location.reload(); },
+    showView: function(name) {
+        document.querySelectorAll('.auth-container, .container, .data-entry-container').forEach(el => el.classList.add('hidden'));
+        const t = document.getElementById(`view-${name}`); t.classList.remove('hidden'); t.style.animation = 'none'; t.offsetHeight; t.style.animation = '';
+    },
+
+    updateUI: function(user) {
+        const users = this.get('users') || [];
+        const freshUser = users.find(u => u.id === user.id) || user;
+        this.save('session', freshUser);
+        document.getElementById('logoutBtn').classList.remove('hidden');
+        document.getElementById('user-badge').classList.remove('hidden');
+        document.getElementById('headerUsername').textContent = freshUser.name;
+        const avatarEl = document.getElementById('user-avatar');
+        if (freshUser.photo) {
+            avatarEl.innerHTML = `<img src="${freshUser.photo}" alt="">`;
+        } else {
+            avatarEl.textContent = freshUser.name.charAt(0).toUpperCase();
+        }
+        if(freshUser.role === 'admin') { this.showView('admin'); this.loadAdminData(); this.loadAdminStats(); }
+        else if(!freshUser.profileComplete) { this.showDataEntry(freshUser); }
+        else { this.showView('student'); this.loadStudentProfile(); this.loadStudentStats(); this.loadStudentData(); }
+    },
+
+    // ===== DATA ENTRY =====
+    showDataEntry: function(user) {
+        this.showView('data-entry');
+        photoModule.reset();
+        document.getElementById('de-email').value = user.username;
+
+        ['de-fname','de-lname','de-father','de-mother'].forEach(id => {
+            const el = document.getElementById(id);
+            if(el) el.addEventListener('blur', function() {
+                if(this.value.trim()) this.value = toTitleCase(this.value);
+                const errId = 'err-' + id.replace('de-','');
+                if(!isValidName(this.value)) {
+                    this.classList.add('field-error');
+                    const errEl = document.getElementById(errId);
+                    if(errEl) { errEl.textContent = 'Only letters allowed (min 2 chars)'; errEl.classList.add('show'); }
+                } else {
+                    this.classList.remove('field-error');
+                    const errEl = document.getElementById(errId);
+                    if(errEl) errEl.classList.remove('show');
+                }
+            });
+        });
+
+        const aadharEl = document.getElementById('de-aadhar');
+        if(aadharEl) aadharEl.addEventListener('input', function() { formatAadhar(this); });
+
+        ['de-phone','de-father-phone'].forEach(id => {
+            const el = document.getElementById(id);
+            if(el) el.addEventListener('blur', function() {
+                const errId = 'err-' + id.replace('de-','');
+                if(this.value && !/^\d{10}$/.test(this.value)) {
+                    this.classList.add('field-error');
+                    const errEl = document.getElementById(errId);
+                    if(errEl) { errEl.textContent = 'Enter a valid 10-digit number'; errEl.classList.add('show'); }
+                } else { this.classList.remove('field-error'); const errEl = document.getElementById(errId); if(errEl) errEl.classList.remove('show'); }
+            });
+        });
+
+        document.getElementById('de-dob').addEventListener('change', function() {
+            const age = (new Date() - new Date(this.value)) / (365.25*24*60*60*1000);
+            if(age < 14 || age > 50) { this.classList.add('field-error'); document.getElementById('err-dob').textContent = 'Age should be between 14 and 50'; document.getElementById('err-dob').classList.add('show'); }
+            else { this.classList.remove('field-error'); document.getElementById('err-dob').classList.remove('show'); }
+        });
+
+        document.getElementById('de-roll').addEventListener('blur', function() {
+            if(!this.value.trim()) { this.classList.add('field-error'); document.getElementById('err-roll').textContent = 'Roll number is required'; document.getElementById('err-roll').classList.add('show'); }
+            else { this.classList.remove('field-error'); document.getElementById('err-roll').classList.remove('show'); }
+        });
+
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+    },
+
+    saveDataEntry: function(e) {
+        e.preventDefault();
+
+        const photoData = document.getElementById('de-photo-data').value;
+
+        const nameFields = [
+            { id: 'de-fname', err: 'err-fname', label: 'First name' },
+            { id: 'de-lname', err: 'err-lname', label: 'Last name' },
+            { id: 'de-father', err: 'err-father', label: "Father's name" },
+            { id: 'de-mother', err: 'err-mother', label: "Mother's name" },
+        ];
+        let valid = true;
+        nameFields.forEach(f => {
+            const el = document.getElementById(f.id); const errEl = document.getElementById(f.err);
+            if(!isValidName(el.value)) { el.classList.add('field-error'); if(errEl) { errEl.textContent = f.label + ' must contain only letters (min 2)'; errEl.classList.add('show'); } valid = false; }
+            else { el.classList.remove('field-error'); if(errEl) errEl.classList.remove('show'); }
+        });
+
+        ['de-phone','de-father-phone'].forEach(id => { const el = document.getElementById(id); if(!/^\d{10}$/.test(el.value)) { el.classList.add('field-error'); valid = false; } });
+
+        const dobVal = document.getElementById('de-dob').value;
+        if(dobVal) { const age = (new Date() - new Date(dobVal)) / (365.25*24*60*60*1000); if(age < 14 || age > 50) valid = false; }
+        if(!valid) { showToast('Please fix the highlighted errors', 'error', 4000); return; }
+
+        setBtnLoading('de-submit-btn', true);
+        setTimeout(() => {
+            setBtnLoading('de-submit-btn', false);
+            const session = this.get('session');
+            const fullName = toTitleCase(document.getElementById('de-fname').value.trim()) + ' ' + toTitleCase(document.getElementById('de-lname').value.trim());
+            let users = this.get('users') || [];
+            const idx = users.findIndex(u => u.id === session.id);
+            if(idx !== -1) {
+                users[idx] = {
+                    ...users[idx], name: fullName, profileComplete: true, photo: photoData || null,
+                    firstName: toTitleCase(document.getElementById('de-fname').value.trim()),
+                    lastName: toTitleCase(document.getElementById('de-lname').value.trim()),
+                    dob: document.getElementById('de-dob').value, gender: document.getElementById('de-gender').value,
+                    bloodGroup: document.getElementById('de-blood').value, phone: document.getElementById('de-phone').value,
+                    nationality: document.getElementById('de-nationality').value, address: document.getElementById('de-address').value.trim(),
+                    rollNo: document.getElementById('de-roll').value.trim(), regNo: document.getElementById('de-regno').value.trim(),
+                    department: document.getElementById('de-dept').value, year: document.getElementById('de-year').value,
+                    semester: document.getElementById('de-sem').value, section: document.getElementById('de-section').value.trim(),
+                    cgpa: document.getElementById('de-cgpa').value, mark10th: document.getElementById('de-10th').value,
+                    mark12th: document.getElementById('de-12th').value, board12th: document.getElementById('de-12thboard').value.trim(),
+                    fatherName: toTitleCase(document.getElementById('de-father').value.trim()),
+                    motherName: toTitleCase(document.getElementById('de-mother').value.trim()),
+                    fatherOcc: document.getElementById('de-father-occ').value.trim(),
+                    fatherPhone: document.getElementById('de-father-phone').value,
+                    fatherEmail: document.getElementById('de-father-email').value.trim(),
+                    community: document.getElementById('de-community').value,
+                    religion: document.getElementById('de-religion').value.trim(),
+                    motherTongue: document.getElementById('de-mother-tongue').value.trim(),
+                    aadhar: document.getElementById('de-aadhar').value.trim(),
+                };
+                this.save('users', users);
+                this.save('session', users[idx]);
+            }
+            showSuccess('Profile Saved!', 'Redirecting to your dashboard...', () => this.updateUI(users[idx]));
+        }, 1200);
+    },
+
+    // ===== STUDENT DASHBOARD =====
+    loadStudentProfile: function() {
+        const s = this.get('session');
+        const avatarHtml = s.photo ? `<img src="${s.photo}" alt="${s.name}">` : s.name.charAt(0);
+        document.getElementById('student-profile-card').innerHTML = `
+            <div class="profile-card">
+                <div class="profile-avatar">${avatarHtml}</div>
+                <div class="profile-details">
+                    <div class="profile-item"><span class="p-label">Full Name</span><span class="p-value">${s.name}</span></div>
+                    <div class="profile-item"><span class="p-label">Roll Number</span><span class="p-value" style="font-family:monospace;color:var(--cyan);">${s.rollNo||'N/A'}</span></div>
+                    <div class="profile-item"><span class="p-label">Register No</span><span class="p-value">${s.regNo||'N/A'}</span></div>
+                    <div class="profile-item"><span class="p-label">Department</span><span class="p-value">${s.department||'N/A'}</span></div>
+                    <div class="profile-item"><span class="p-label">Year / Sem</span><span class="p-value">${s.year||''} — ${s.semester||''}</span></div>
+                    <div class="profile-item"><span class="p-label">Section</span><span class="p-value">${s.section||'N/A'}</span></div>
+                    <div class="profile-item"><span class="p-label">CGPA</span><span class="p-value" style="color:var(--neon-green);">${s.cgpa||'N/A'}</span></div>
+                    <div class="profile-item"><span class="p-label">DOB / Gender</span><span class="p-value">${s.dob||'N/A'} / ${s.gender||'N/A'}</span></div>
+                    <div class="profile-item"><span class="p-label">Blood Group</span><span class="p-value">${s.bloodGroup||'N/A'}</span></div>
+                    <div class="profile-item"><span class="p-label">Phone</span><span class="p-value">${s.phone||'N/A'}</span></div>
+                    <div class="profile-item"><span class="p-label">Community</span><span class="p-value">${s.community||'N/A'}</span></div>
+                    <div class="profile-item"><span class="p-label">Father</span><span class="p-value">${s.fatherName||'N/A'}</span></div>
+                </div>
+            </div>`;
+        document.getElementById('exam-roll').value = s.rollNo || '';
+    },
+
+    loadStudentStats: function() {
+        const s = this.get('session');
+        const regs = (this.get('registrations') || []).filter(r => r.studentId === s.id);
+        const confirmed = regs.filter(r => r.status === 'confirmed').length;
+        const paid = regs.filter(r => r.paymentStatus === 'paid').length;
+        document.getElementById('student-stats').innerHTML = `
+            <div class="stat-card"><div class="stat-icon" style="background:rgba(0,240,255,0.12);color:var(--cyan);">📝</div><div class="stat-number" style="color:var(--cyan);">${regs.length}</div><div class="stat-label">Total Registered</div></div>
+            <div class="stat-card"><div class="stat-icon" style="background:rgba(0,255,136,0.12);color:#34d399;">✅</div><div class="stat-number" style="color:#34d399;">${confirmed}</div><div class="stat-label">Confirmed</div></div>
+            <div class="stat-card"><div class="stat-icon" style="background:rgba(245,158,11,0.12);color:#fbbf24;">⏳</div><div class="stat-number" style="color:#fbbf24;">${regs.length-confirmed}</div><div class="stat-label">Pending</div></div>
+            <div class="stat-card"><div class="stat-icon" style="background:rgba(255,0,255,0.12);color:var(--magenta);">💳</div><div class="stat-number" style="color:var(--magenta);">${paid}</div><div class="stat-label">Payments Done</div></div>`;
+    },
+
+    loadStudentData: function() {
+        const exams = this.get('exams') || [];
+        const sel = document.getElementById('exam-select');
+        sel.innerHTML = '<option value="" disabled selected>-- Choose an Exam --</option>';
+        exams.forEach(ex => { sel.innerHTML += `<option value="${ex.id}">${ex.name} — ${ex.date} (₹${ex.fee})</option>`; });
+        const s = this.get('session');
+        const regs = (this.get('registrations') || []).filter(r => r.studentId === s.id);
+        const wrapper = document.getElementById('student-reg-wrapper');
+        if(regs.length === 0) { wrapper.innerHTML = '<div class="empty-state"><div class="empty-icon">📋</div><div class="empty-text">No registrations yet</div><div class="empty-sub">Register for an exam using the form above</div></div>'; return; }
+        wrapper.innerHTML = `<table><thead><tr><th>Roll No</th><th>Exam</th><th>Timings</th><th>Payment</th><th>Status</th><th>Actions</th></tr></thead><tbody id="student-reg-list"></tbody></table>`;
+        const tbody = document.getElementById('student-reg-list'); tbody.innerHTML = '';
+        regs.forEach((r, i) => {
+            let pb = r.paymentStatus==='paid'?'<span class="badge badge-paid">Paid</span>':'<span class="badge badge-unpaid">Unpaid</span>';
+            let pa = r.paymentStatus==='paid'?'<span style="color:#34d399;font-size:11px;font-weight:600;">✓ Done</span>':`<button class="btn-small btn-purple" onclick="app.initPayment(${r.id})">💳 Pay ₹${r.fee}</button>`;
+            let sb = r.status==='confirmed'?'<span class="badge badge-confirmed">Confirmed</span>':'<span class="badge badge-pending">Pending</span>';
+            let dl = (r.status==='confirmed'&&r.paymentStatus==='paid')?`<button class="btn-small btn-confirm" onclick="app.showHallTicket(${r.id})" style="margin-top:3px;">🎫 Hall Ticket</button>`:'<span style="color:#475569;font-size:11px;">—</span>';
+            tbody.innerHTML += `<tr style="animation-delay:${i*0.08}s"><td style="font-weight:700;font-family:monospace;">${r.rollNo}</td><td>${r.examName}</td><td style="white-space:nowrap;">${r.examDate}<br><span style="color:var(--text-muted);font-size:11px;">${r.examTime||'TBD'}</span></td><td>${pb}</td><td>${sb}</td><td style="white-space:nowrap;">${pa}<br>${dl}</td></tr>`;
+        });
+    },
+
+    registerExam: function(e) {
+        e.preventDefault();
+        const s = this.get('session');
+        const rollNo = document.getElementById('exam-roll').value.trim();
+        const examId = document.getElementById('exam-select').value;
+        const ex = (this.get('exams')||[]).find(x => x.id == examId);
+        if(!ex) { showToast('Select a valid exam','error'); return; }
+        let regs = this.get('registrations')||[];
+        if(regs.some(r => r.studentId===s.id && r.examId==examId)) { showToast('Already registered!','error'); return; }
+        setBtnLoading('reg-btn', true);
+        setTimeout(() => {
+            setBtnLoading('reg-btn', false);
+            regs.push({
+                id:Date.now(), studentId:s.id, studentName:s.name, studentEmail:s.username,
+                examId, examName:ex.name, examDate:ex.date, examTime:ex.time, examCenter:ex.center,
+                fee:ex.fee, rollNo, status:'pending', paymentStatus:'unpaid',
+                department:s.department||'', year:s.year||'', semester:s.semester||'',
+                section:s.section||'', phone:s.phone||'', fatherName:s.fatherName||'',
+                regNo:s.regNo||'', dob:s.dob||'', gender:s.gender||'', bloodGroup:s.bloodGroup||'',
+                photo:s.photo||null
+            });
+            this.save('registrations', regs);
+            document.getElementById('exam-select').selectedIndex = 0;
+            showSuccess('Registered!', ex.name, () => { this.loadStudentData(); this.loadStudentStats(); });
+        }, 1000);
+    },
+
+    initPayment: function(id) {
+        const reg = (this.get('registrations')||[]).find(r=>r.id===id); if(!reg)return;
+        this.currentPaymentId = id;
+        document.getElementById('pay-exam-name').innerText = reg.examName;
+        document.getElementById('pay-amount').innerText = reg.fee;
+        document.getElementById('payment-modal').classList.add('active');
+    },
+    closePayment: function() { document.getElementById('payment-modal').classList.remove('active'); this.currentPaymentId = null; },
+    processPayment: function() {
+        if(!this.currentPaymentId) return;
+        setBtnLoading('pay-now-btn', true);
+        setTimeout(() => {
+            setBtnLoading('pay-now-btn', false);
+            let regs = this.get('registrations')||[];
+            const i = regs.findIndex(r=>r.id===this.currentPaymentId);
+            if(i!==-1) { regs[i].paymentStatus='paid'; this.save('registrations',regs); this.closePayment(); showSuccess('Payment Successful!','₹'+regs[i].fee+' paid',()=>{this.loadStudentData();this.loadStudentStats();}); }
+        }, 1500);
+    },
+
+    // ===== HALL TICKET WITH SQUARE QR CODE =====
+    showHallTicket: function(id) {
+        const r = (this.get('registrations')||[]).find(x=>x.id===id); if(!r) return;
+
+        // Fill all fields
+        document.getElementById('ht-name').innerText = r.studentName;
+        document.getElementById('ht-regno').innerText = r.regNo || 'N/A';
+        document.getElementById('ht-roll').innerText = r.rollNo;
+        document.getElementById('ht-dept').innerText = 'Department of '+(r.department||'N/A');
+        document.getElementById('ht-department').innerText = r.department||'N/A';
+        document.getElementById('ht-yearsem').innerText = (r.year||'')+' — '+(r.semester||'');
+        document.getElementById('ht-section').innerText = r.section||'N/A';
+        document.getElementById('ht-exam').innerText = r.examName;
+        document.getElementById('ht-date').innerText = r.examDate;
+        document.getElementById('ht-time').innerText = r.examTime||'TBD';
+        document.getElementById('ht-center').innerText = r.examCenter;
+        document.getElementById('ht-father').innerText = r.fatherName||'N/A';
+
+        // Display uploaded photo
+        const photoBox = document.getElementById('ht-photo-box');
+        if (r.photo) {
+            photoBox.innerHTML = `<img src="${r.photo}" alt="${r.studentName}" style="width:100%;height:100%;object-fit:cover;border-radius:6px;">`;
+        } else {
+            photoBox.innerHTML = `<span style="color:#aaa;font-size:11px;text-align:center;">📷<br>No Photo</span>`;
+        }
+
+        // Generate UNIQUE Square QR Code
+        const qrBox = document.getElementById('ht-qr-box');
+        qrBox.innerHTML = '';
+        
+        const qrPayload = JSON.stringify({
+            id: r.id,
+            regNo: r.regNo,
+            rollNo: r.rollNo,
+            name: r.studentName,
+            department: r.department,
+            exam: r.examName,
+            date: r.examDate,
+            time: r.examTime,
+            center: r.examCenter,
+            status: r.status,
+            payment: r.paymentStatus,
+            uniqueId: btoa(r.id + '_' + r.rollNo + '_' + Date.now())
+        });
+
+        try {
+            // Perfect square QR: 110x110 pixels
+            new QRCode(qrBox, {
+                text: qrPayload,
+                width: 110,
+                height: 110,
+                colorDark: "#1e3a5f",
+                colorLight: "#ffffff",
+                correctLevel: QRCode.CorrectLevel.H
+            });
+            
+            qrBox.style.width = '110px';
+            qrBox.style.height = '110px';
+            qrBox.style.display = 'flex';
+            qrBox.style.alignItems = 'center';
+            qrBox.style.justifyContent = 'center';
+            
+        } catch(e) {
+            qrBox.innerHTML = '<div style="width:110px;height:110px;display:flex;align-items:center;justify-content:center;color:#999;font-size:11px;border:2px dashed #ccc;border-radius:8px;">QR Error</div>';
+        }
+
+        document.getElementById('hall-ticket-modal').classList.add('active');
+    },
+    
+    closeHallTicket: function() { 
+        document.getElementById('hall-ticket-modal').classList.remove('active'); 
+    },
+
+    // ===== ADMIN FUNCTIONS =====
+    loadAdminStats: function() {
+        const exams=this.get('exams')||[], regs=this.get('registrations')||[];
+        const confirmed=regs.filter(r=>r.status==='confirmed').length;
+        const paid=regs.filter(r=>r.paymentStatus==='paid').length;
+        const revenue=regs.filter(r=>r.paymentStatus==='paid').reduce((s,r)=>s+(parseInt(r.fee)||0),0);
+        
+        document.getElementById('admin-stats').innerHTML = `
+            <div class="stat-card">
+                <div class="stat-icon" style="background:rgba(255,0,255,0.12);color:var(--magenta);">📚</div>
+                <div class="stat-number" style="color:var(--magenta);">${exams.length}</div>
+                <div class="stat-label">Total Exams</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-icon" style="background:rgba(0,240,255,0.12);color:var(--cyan);">📋</div>
+                <div class="stat-number" style="color:var(--cyan);">${regs.length}</div>
+                <div class="stat-label">Total Registrations</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-icon" style="background:rgba(245,158,11,0.12);color:#fbbf24;">⏳</div>
+                <div class="stat-number" style="color:#fbbf24;">${regs.length-confirmed}</div>
+                <div class="stat-label">Pending Approval</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-icon" style="background:rgba(0,255,136,0.12);color:var(--neon-green);">💰</div>
+                <div class="stat-number" style="color:var(--neon-green);">₹${revenue.toLocaleString()}</div>
+                <div class="stat-label">Revenue (${paid} paid)</div>
+            </div>
+        `;
+    },
+
+    openAdminTab: function(tab) {
+        document.querySelectorAll('.tab-btn').forEach(b=>b.classList.remove('active'));
+        document.querySelectorAll('[id^="admin-tab"]').forEach(t=>t.classList.add('hidden'));
+        
+        const tabs = document.querySelectorAll('.tab-btn');
+        
+        if(tab==='exams'){
+            tabs[0].classList.add('active');
+            const el=document.getElementById('admin-tab-exams');
+            el.classList.remove('hidden');
+            el.style.animation='none';el.offsetHeight;el.style.animation='';
+            this.loadAdminData();
+        }
+        else{
+            tabs[1].classList.add('active');
+            const el=document.getElementById('admin-tab-registrations');
+            el.classList.remove('hidden');
+            el.style.animation='none';el.offsetHeight;el.style.animation='';
+            this.loadAdminRegistrations();
+        }
+    },
+
+    loadAdminData: function() {
+        const exams=this.get('exams')||[],regs=this.get('registrations')||[];
+        const w=document.getElementById('admin-exam-wrapper');
+        
+        if(exams.length===0){
+            w.innerHTML='<div class="empty-state"><div class="empty-icon">📚</div><div class="empty-text">No exams added yet</div><div class="empty-sub">Use the form above to create your first exam</div></div>';
+            return;
+        }
+        
+        w.innerHTML=`<table><thead><tr><th>Exam Name</th><th>Date</th><th>Time</th><th>Center</th><th>Fee</th><th>Regs</th><th>Actions</th></tr></thead><tbody id="admin-exam-list"></tbody></table>`;
+        
+        const tb=document.getElementById('admin-exam-list');
+        tb.innerHTML='';
+        
+        exams.forEach((e,i)=>{
+            const c=regs.filter(r=>r.examId==e.id).length;
+            tb.innerHTML+=`
+                <tr style="animation-delay:${i*0.08}s">
+                    <td style="font-weight:600;">${e.name}</td>
+                    <td style="font-family:monospace;">${e.date}</td>
+                    <td>${e.time||'TBD'}</td>
+                    <td>${e.center}</td>
+                    <td style="font-weight:700;color:#34d399;">₹${e.fee}</td>
+                    <td><span style="color:var(--cyan);font-weight:700;">${c}</span></td>
+                    <td style="white-space:nowrap;">
+                        <button class="btn-small btn-edit" onclick="app.openEditExam(${e.id})">✏️ Edit</button>
+                        <button class="btn-small btn-delete" onclick="app.deleteExam(${e.id})">🗑️ Delete</button>
+                    </td>
+                </tr>
+            `;
+        });
+    },
+
+    loadAdminRegistrations: function() {
+        const regs=this.get('registrations')||[];
+        const w=document.getElementById('admin-reg-wrapper');
+        
+        if(regs.length===0){
+            w.innerHTML='<div class="empty-state"><div class="empty-icon">📭</div><div class="empty-text">No registrations received yet</div></div>';
+            return;
+        }
+        
+        w.innerHTML=`<table><thead><tr><th>Roll No</th><th>Student</th><th>Dept</th><th>Exam</th><th>Payment</th><th>Status</th><th>Actions</th></tr></thead><tbody id="admin-reg-list"></tbody></table>`;
+        
+        const tb=document.getElementById('admin-reg-list');
+        tb.innerHTML='';
+        
+        regs.forEach((r,i)=>{
+            let pb=r.paymentStatus==='paid'
+                ?'<span class="badge badge-paid">Paid</span>'
+                :'<span class="badge badge-unpaid">Unpaid</span>';
+            let sb=r.status==='confirmed'
+                ?'<span class="badge badge-confirmed">Confirmed</span>'
+                :'<span class="badge badge-pending">Pending</span>';
+                
+            tb.innerHTML+=`
+                <tr style="animation-delay:${i*0.06}s">
+                    <td style="font-weight:700;font-family:monospace;">${r.rollNo}</td>
+                    <td>${r.studentName}<br><span style="color:var(--text-muted);font-size:11px;">${r.studentEmail}</span></td>
+                    <td style="font-size:0.8rem;">${r.department||'N/A'}</td>
+                    <td style="font-size:0.8rem;">${r.examName}<br><span style="color:var(--text-muted);font-size:11px;">${r.examDate} • ${r.examTime||'TBD'}</span></td>
+                    <td>${pb}</td>
+                    <td>${sb}</td>
+                    <td style="white-space:nowrap;">
+                        <button class="btn-small btn-edit" onclick="app.openEditReg(${r.id})">✏️</button>
+                        <button class="btn-small btn-delete" onclick="app.deleteReg(${r.id})">🗑️</button>
+                    </td>
+                </tr>
+            `;
+        });
+    },
+
+    addExam: function(e) {
+        e.preventDefault();
+        
+        const name=document.getElementById('add-exam-name').value.trim(),
+              date=document.getElementById('add-exam-date').value,
+              time=document.getElementById('add-exam-time').value,
+              center=document.getElementById('add-exam-center').value.trim(),
+              fee=document.getElementById('add-exam-fee').value;
+              
+        if(!name||!date||!time||!center||!fee){
+            showToast('Please fill all exam details','error');
+            return;
+        }
+        
+        let exams=this.get('exams')||[];
+        exams.push({
+            id:Date.now(),
+            name:name,
+            date:date,
+            time:time,
+            center:center,
+            fee:parseInt(fee)
+        });
+        
+        this.save('exams',exams);
+        
+        ['add-exam-name','add-exam-date','add-exam-time','add-exam-center','add-exam-fee']
+            .forEach(id=>document.getElementById(id).value='');
+        
+        showToast(`✅ Exam "${name}" created successfully!`,'success');
+        this.loadAdminData();
+        this.loadAdminStats();
+    },
+
+    openEditExam: function(id) {
+        const exam=(this.get('exams')||[]).find(e=>e.id===id);
+        if(!exam) return;
+        
+        this.currentEditExamId=id;
+        document.getElementById('edit-exam-name').value=exam.name;
+        document.getElementById('edit-exam-date').value=exam.date;
+        document.getElementById('edit-exam-time').value=exam.time;
+        document.getElementById('edit-exam-center').value=exam.center;
+        document.getElementById('edit-exam-fee').value=exam.fee;
+        document.getElementById('edit-exam-modal').classList.add('active');
+    },
+    
+    closeEditExam: function() { 
+        document.getElementById('edit-exam-modal').classList.remove('active'); 
+        this.currentEditExamId=null; 
+    },
+    
+    saveEditExam: function(e) {
+        e.preventDefault();
+        let exams=this.get('exams')||[];
+        const i=exams.findIndex(x=>x.id===this.currentEditExamId);
+        if(i===-1) return;
+        
+        exams[i]={
+            ...exams[i],
+            name:document.getElementById('edit-exam-name').value.trim(),
+            date:document.getElementById('edit-exam-date').value,
+            time:document.getElementById('edit-exam-time').value,
+            center:document.getElementById('edit-exam-center').value.trim(),
+            fee:parseInt(document.getElementById('edit-exam-fee').value)
+        };
+        
+        this.save('exams',exams);
+        this.closeEditExam();
+        showToast('✅ Exam updated successfully!','success');
+        this.loadAdminData();
+        this.loadAdminStats();
+    },
+
+    deleteExam: function(id) {
+        let exams=this.get('exams')||[],
+            regs=this.get('registrations')||[];
+        const exam=exams.find(e=>e.id===id);
+        if(!exam) return;
+        
+        const linked=regs.filter(r=>r.examId==id).length;
+        exams=exams.filter(e=>e.id!==id);
+        regs=regs.filter(r=>r.examId!=id);
+        
+        this.save('exams',exams);
+        this.save('registrations',regs);
+        
+        showToast(
+            linked>0 
+                ? `🗑️ "${exam.name}" deleted with ${linked} registration(s)` 
+                : `🗑️ "${exam.name}" deleted`,
+            'info',
+            4000
+        );
+        this.loadAdminData();
+        this.loadAdminStats();
+    },
+
+    openEditReg: function(id) {
+        const r=(this.get('registrations')||[]).find(x=>x.id===id);
+        if(!r) return;
+        
+        this.currentEditRegId=id;
+        
+        document.getElementById('edit-reg-info').innerHTML=`
+            <div class="edit-info-row"><span class="edit-info-label">👤 Student</span><span class="edit-info-value"><strong>${r.studentName}</strong></span></div>
+            <div class="edit-info-row"><span class="edit-info-label">📧 Email</span><span class="edit-info-value">${r.studentEmail}</span></div>
+            <div class="edit-info-row"><span class="edit-info-label">🏛️ Department</span><span class="edit-info-value">${r.department||'N/A'}</span></div>
+            <div class="edit-info-row"><span class="edit-info-label">📱 Phone</span><span class="edit-info-value">${r.phone||'N/A'}</span></div>
+            <div class="edit-info-row"><span class="edit-info-label">📚 Exam</span><span class="edit-info-value"><strong>${r.examName}</strong></span></div>
+            <div class="edit-info-row"><span class="edit-info-label">📅 Schedule</span><span class="edit-info-value">${r.examDate} • ${r.examTime||'TBD'}</span></div>
+            <div class="edit-info-row"><span class="edit-info-label">💰 Fee</span><span class="edit-info-value" style="color:#34d399;font-weight:700;">₹${r.fee}</span></div>
+        `;
+        
+        document.getElementById('edit-reg-roll').value=r.rollNo;
+        document.getElementById('edit-reg-status').value=r.status;
+        document.getElementById('edit-reg-payment').value=r.paymentStatus;
+        document.getElementById('edit-reg-modal').classList.add('active');
+    },
+    
+    closeEditReg: function() { 
+        document.getElementById('edit-reg-modal').classList.remove('active'); 
+        this.currentEditRegId=null; 
+    },
+    
+    saveEditReg: function(e) {
+        e.preventDefault();
+        let regs=this.get('registrations')||[];
+        const i=regs.findIndex(r=>r.id===this.currentEditRegId);
+        if(i===-1) return;
+        
+        regs[i].rollNo=document.getElementById('edit-reg-roll').value.trim();
+        regs[i].status=document.getElementById('edit-reg-status').value;
+        regs[i].paymentStatus=document.getElementById('edit-reg-payment').value;
+        
+        this.save('registrations',regs);
+        this.closeEditReg();
+        showToast('✅ Registration updated successfully!','success');
+        this.loadAdminRegistrations();
+        this.loadAdminStats();
+    },
+
+    deleteReg: function(id) {
+        let regs=this.get('registrations')||[];
+        const r=regs.find(x=>x.id===id);
+        regs=regs.filter(x=>x.id!==id);
+        this.save('registrations',regs);
+        
+        showToast(`🗑️ Registration removed for ${r?r.studentName:'student'}`,'info');
+        this.loadAdminRegistrations();
+        this.loadAdminStats();
+    }
+};
+
+// ===== MODAL CLOSE HANDLERS =====
+document.querySelectorAll('.modal-overlay').forEach(o=>{
+    o.addEventListener('click',function(e){
+        if(e.target===this){
+            this.classList.remove('active');
+            app.currentPaymentId=null;
+            app.currentEditExamId=null;
+            app.currentEditRegId=null;
+        }
+    });
+});
+
+document.addEventListener('keydown',function(e){
+    if(e.key==='Escape'){
+        document.querySelectorAll('.modal-overlay.active').forEach(m=>{
+            m.classList.remove('active');
+        });
+        app.currentPaymentId=null;
+        app.currentEditExamId=null;
+        app.currentEditRegId=null;
+    }
+});
+
+// ===== START APPLICATION =====
+console.log('🚀 SRMVEC Exam Portal Starting...');
+app.init();
+console.log('✅ System Ready');
+
+</script>
 </body>
 </html>
